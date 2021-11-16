@@ -33,35 +33,31 @@ void RecordUsage(Table* table, const Filter *filter, const VectorProjection *vp)
 }
 
 const VectorProjection * ScanExecutor::Next() {
+  if (!ti_->Advance()) return nullptr;
   auto start = std::chrono::high_resolution_clock::now();
-  if (ti_->Advance()) {
-    filter_.Reset(table_vp_->NumRows(), FilterMode::BitmapFull);
-    for (auto &filter_expr: filters_) {
-      filter_expr->Evaluate(table_vp_.get(), &filter_);
-      if (filter_.Selectivity() < 0.25) {
-        filter_.SwitchFilterMode(FilterMode::SelVecSelective);
-      }
+  filter_.Reset(table_vp_->NumRows(), FilterMode::BitmapFull);
+  for (auto &filter_expr: filters_) {
+    filter_expr->Evaluate(table_vp_.get(), &filter_);
+    if (filter_.Selectivity() < 0.25) {
+      filter_.SwitchFilterMode(FilterMode::SelVecSelective);
     }
-    for (auto& embedding_expr: embedding_filters_) {
-      embedding_expr->Evaluate(table_vp_.get(), &filter_);
-      if (filter_.Selectivity() < 0.25) {
-        filter_.SwitchFilterMode(FilterMode::SelVecSelective);
-      }
-    }
-    if (scan_node_->RecordRows()) {
-      RecordUsage(scan_node_->GetTable(), &filter_, table_vp_.get());
-    }
-    for (auto &proj: projections_) {
-      auto vec = proj->Evaluate(table_vp_.get(), &filter_);
-      if (!init_) result_->AddVector(vec);
-    }
-    init_ = true;
-    auto end = std::chrono::high_resolution_clock::now();
-    scan_time_ += duration_cast<std::chrono::nanoseconds>(end - start).count();
-    return result_.get();
   }
+  for (auto& embedding_expr: embedding_filters_) {
+    embedding_expr->Evaluate(table_vp_.get(), &filter_);
+    if (filter_.Selectivity() < 0.25) {
+      filter_.SwitchFilterMode(FilterMode::SelVecSelective);
+    }
+  }
+  if (scan_node_->RecordRows()) {
+    RecordUsage(scan_node_->GetTable(), &filter_, table_vp_.get());
+  }
+  for (auto &proj: projections_) {
+    auto vec = proj->Evaluate(table_vp_.get(), &filter_);
+    if (!init_) result_->AddVector(vec);
+  }
+  init_ = true;
   auto end = std::chrono::high_resolution_clock::now();
   scan_time_ += duration_cast<std::chrono::nanoseconds>(end - start).count();
-  return nullptr;
+  return result_.get();
 }
 }

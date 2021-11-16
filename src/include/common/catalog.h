@@ -56,6 +56,14 @@ class Catalog {
     return ret;
   }
 
+  void SetParallelismLevel(uint64_t level) {
+    parallelism_level_ = level;
+  }
+
+  uint64_t  GetParallelismLevel() const {
+    return parallelism_level_;
+  }
+
  private:
   // Private Constructor prevents initialization.
   Catalog() {}
@@ -65,5 +73,8 @@ class Catalog {
 
   // Table Stats
   std::unordered_map<const Table*, std::unique_ptr<TableStats>> tables_stats_;
+
+  // Parallelism Level
+  uint64_t parallelism_level_{1};
 };
 }

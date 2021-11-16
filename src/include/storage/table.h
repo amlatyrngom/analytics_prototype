@@ -333,7 +333,12 @@ class BlockIterator {
 class TableIterator {
  public:
   /**
-   * Constructor
+   * Constructor for bounded scans.
+   */
+  explicit TableIterator(const Table *table, uint64_t block_lo, uint64_t block_hi);
+
+  /**
+   * Constructor for full scan.
    */
   explicit TableIterator(const Table *table);
 
@@ -360,7 +365,8 @@ class TableIterator {
  private:
   const Table *table_;
   const Block *curr_block_;
-  uint64_t curr_block_idx_{0};
+  uint64_t block_hi_;
+  uint64_t curr_block_idx_;
   std::unique_ptr<BlockIterator> block_iter_{nullptr};
 };
 

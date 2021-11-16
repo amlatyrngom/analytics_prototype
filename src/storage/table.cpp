@@ -51,12 +51,17 @@ std::vector<const Vector *> BlockIterator::Vectors() const {
   return res;
 }
 
-TableIterator::TableIterator(const Table *table) : table_(table) {
-  if (table->NumBlocks() > 0) {
+TableIterator::TableIterator(const Table *table, uint64_t block_lo, uint64_t block_hi)
+: table_(table)
+, block_hi_(block_hi)
+, curr_block_idx_(block_lo) {
+  if (curr_block_idx_ > block_hi_) {
     curr_block_ = table_->BlockAt(curr_block_idx_);
     block_iter_ = std::make_unique<BlockIterator>(table_, curr_block_);
   }
 }
+
+TableIterator::TableIterator(const Table *table) : TableIterator(table, 0, table->NumBlocks()) {}
 
 bool TableIterator::Advance() {
   // Empty Table.
@@ -66,7 +71,7 @@ bool TableIterator::Advance() {
   // Move to next block otherwise.
   curr_block_idx_++;
   // Check if this end of blocks reached.
-  if (curr_block_idx_ >= table_->NumBlocks()) return false;
+  if (curr_block_idx_ >= block_hi_) return false;
   // Load next blocks.
   curr_block_ = table_->BlockAt(curr_block_idx_);
   block_iter_->Reset(curr_block_);

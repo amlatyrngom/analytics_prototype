@@ -52,23 +52,15 @@ add_subdirectory(third_party/robin-map)
 list(APPEND THIRD_PARTY_LIBS tsl::robin_map)
 
 
-## Bloom filter
-#include_directories(/usr/local/Cellar/boost/1.76.0/include)
-#include_directories(third_party/bloomfilter-bsd)
-#add_subdirectory(third_party/bloomfilter-bsd)
-#list(APPEND THIRD_PARTY_LIBS dtl_core-avx2)
 
 if( APPLE )
-    set(OPENSSL_ROOT_DIR /usr/local/Cellar/openssl@1.1/1.1.1k/)
+    set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@3)
 endif( APPLE )
 
 find_package(OpenSSL REQUIRED)
-#include_directories(SYSTEM /usr/local/Cellar/openssl@1.1/1.1.1k/include)
-#link_directories(/usr/local/Cellar/openssl@1.1/1.1.1k/lib)
 
 
 include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
-#link_directories(/usr/local/Cellar/openssl@1.1/1.1.1k/lib)
 message("FOUND SSL ${OPENSSL_INCLUDE_DIR}")
 add_subdirectory(third_party/cuckoofilter)
 list(APPEND THIRD_PARTY_LIBS cuckoofilter)
