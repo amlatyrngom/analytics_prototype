@@ -15,6 +15,8 @@ enum class PlanType {
   StaticAgg,
   Sort,
   Materialize,
+  BuildRowIDIndex,
+  RowIDIndexJoin,
 };
 
 class PlanNode {

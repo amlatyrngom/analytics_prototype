@@ -9,6 +9,7 @@
 #include "execution/executors/scan_executor.h"
 #include "execution/executors/sort_executor.h"
 #include "execution/executors/static_aggr_executor.h"
+#include "execution/executors/build_rowid_index_executor.h"
 #include "execution/execution_context.h"
 
 

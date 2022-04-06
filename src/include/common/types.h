@@ -33,6 +33,58 @@ enum class SqlType {
 };
 #undef ENUM_DEFINER
 
+
+struct VarlenInfo {
+
+  [[nodiscard]] bool IsCompact() const {
+    return (info & 1) == 1;
+  }
+
+  // Can only be set once.
+  void SetCompact(bool is_compact) {
+    info |= is_compact;
+  }
+
+  // Remaining bits after compact.
+  [[nodiscard]] uint64_t Rest() const {
+    return info >> 1;
+  }
+
+  [[nodiscard]] uint64_t CompactSize() const {
+    return (Rest() & 0xFFFF);
+  }
+
+  // Can only be set once.
+  // Assumes s is less than 2**16.
+  void SetCompactSize(uint64_t s) {
+    info |= (s << 1);
+  }
+
+  [[nodiscard]] uint64_t CompactOffset() const {
+    return (Rest() >> 16);
+  }
+
+  // Can only be set once.
+  // Assumes s is less than 2**32.
+  void SetCompactOffset(uint64_t o) {
+    info |= (o << 17);
+  }
+
+  [[nodiscard]] uint64_t NormalSize() const {
+    return Rest();
+  }
+
+  // Can only be set once
+  void SetNormalSize(uint64_t s) {
+    info |= (s << 1);
+  }
+
+  // First bit: is_compact.
+  // If is_compact: next 16 bits is size. After that is offset within block.
+  // If !is_compact: rest is size.
+  uint64_t info{0};
+};
+
 /**
  * Class for variable length data.
  */
@@ -41,27 +93,42 @@ class Varlen {
   /**
    * Constructor
    */
-  Varlen(uint64_t size, const char *data) : size_(size) {
-    data_ = reinterpret_cast<char *>(std::malloc(size));
-    std::memcpy(data_, data, size);
-  }
+//  Varlen(int64_t size, const char *data) : size_(size) {
+//    if (size == 0) {
+//      data_ = nullptr;
+//      return;
+//    }
+//    if (size > 0) {
+//      data_ = reinterpret_cast<char *>(std::malloc(size));
+//      if (data != nullptr) {
+//        std::memcpy(data_, data, size);
+//      }
+//    }
+//    if (size < 0) {
+//      // User is responsible for setting string that does not belong to the varlen.
+//      data_ = nullptr;
+//    }
+//  }
 
   /**
    * Should be called explicitly by table deletor to free allocated memory.
    */
   void Free() {
-    if (data_ != nullptr) {
+    if (!info_.IsCompact() && data_ != nullptr) {
       std::free(data_);
       data_ = nullptr;
     }
   }
 
   [[nodiscard]] int Comp(const Varlen &other) const {
-    auto min_size = std::min(size_, other.size_);
+    // Only works with normal varlens.
+    auto this_size = info_.NormalSize();
+    auto other_size = info_.NormalSize();
+    auto min_size = std::min(this_size, other_size);
     auto cmp = std::memcmp(data_, other.data_, min_size);
     if (cmp != 0) return cmp;
-    if (size_ == other.size_) return 0;
-    return size_ < other.size_ ? -1 : 1;
+    if (this_size == other_size) return 0;
+    return this_size < other_size ? -1 : 1;
   }
 
   [[nodiscard]] bool operator<(const Varlen &other) const {
@@ -84,20 +151,44 @@ class Varlen {
   }
 
   /**
-   * @return Size of entry.
-   */
-  [[nodiscard]] uint64_t Size() const {
-    return size_;
-  }
-
-  /**
    * @return Raw data array.
    */
   [[nodiscard]] const char *Data() const {
     return data_;
   }
+
+  static Varlen MakeCompact(uint64_t offset, uint64_t size) {
+    Varlen v;
+    v.info_.SetCompact(true);
+    v.info_.SetCompactOffset(offset);
+    v.info_.SetCompactSize(size);
+    v.data_ = nullptr;
+    return v;
+  }
+
+  static Varlen MakeNormal(uint64_t size, const char* data) {
+    Varlen v;
+    v.info_.SetCompact(false);
+    v.info_.SetNormalSize(size);
+    if (size == 0) {
+      v.data_ = nullptr;
+      return v;
+    }
+    v.data_ = reinterpret_cast<char *>(std::malloc(size));
+    if (data != nullptr) {
+      std::memcpy(v.data_, data, size);
+    } else {
+      std::memset(v.data_, 0, size);
+    }
+    return v;
+  }
+
+  const auto& Info() const {
+    return info_;
+  }
+
  private:
-  uint64_t size_;
+  VarlenInfo info_; // Negative when data does not belong to the varlen.
   char *data_;
 };
 

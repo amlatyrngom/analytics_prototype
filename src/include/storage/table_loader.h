@@ -40,11 +40,8 @@ struct TableLoader {
 
   /**
    * Write a column into the byte array.
-   * @param col_data byte array.
-   * @param field csv field.
-   * @param type column type.
    */
-  static void WriteCol(char *col_data, csv::CSVField &field, SqlType type);
+  static void WriteCol(char *col_data, uint64_t* bitmap, csv::CSVField &field, uint64_t row_idx, SqlType type);
 };
 
 }

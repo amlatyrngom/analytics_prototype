@@ -132,5 +132,15 @@ struct VectorOps {
   static void InitVector(const Filter* filter, const Value& val, SqlType val_type, Vector* out);
 
   static void CopyVector(const Filter* filter, const Vector* in, char* out);
+
+  /**
+   * Read a block element at a specific location.
+   * @param block
+   * @param row_idx
+   * @param col_idx
+   * @param out
+   * @param out_idx
+   */
+  static void ReadBlock(const Block* block, const std::vector<std::pair<uint64_t, uint64_t>>& row_idxs, uint64_t col_idx, Vector* out);
 };
 }

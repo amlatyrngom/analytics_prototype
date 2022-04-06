@@ -42,8 +42,6 @@ static auto ArithHashMurmur2(const T val, uint64_t seed) -> std::enable_if_t<std
 
 
 #define NOOP(...)
-constexpr uint64_t VEC_SIZE = 4096;
-constexpr uint64_t BLOCK_SIZE = 64 * VEC_SIZE;
 const __m256i MASK_ALL_256 = _mm256_set1_epi32(int(0xFFFFFFFF));
 const __m128i MASK_ALL_128 = _mm_set1_epi32(int(0xFFFFFFFF));
 constexpr double EMA_ALPHA = 0.2;

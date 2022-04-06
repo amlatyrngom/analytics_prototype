@@ -1,7 +1,12 @@
 #pragma once
 
 #include <iostream>
+#include <unordered_set>
+#include <shared_mutex>
 #include "common/util.h"
+#include "storage/filter.h"
+#include "storage/buffer_manager.h"
+#include "storage/table_block.h"
 
 // TODO(Amadou): Add support for NULL later.
 namespace smartid {
@@ -15,12 +20,14 @@ class Vector {
   /**
    * Construct a Vector.
    */
-  explicit Vector(SqlType type, uint64_t num_elems = VEC_SIZE)
+  explicit Vector(SqlType type)
       : elem_type_(type),
-        num_elems_(num_elems),
-        owned_data_(num_elems * TypeUtil::TypeSize(type)),
+        num_elems_(0),
+        owned_data_(0),
         data_(owned_data_.data()),
-        elem_size_(TypeUtil::TypeSize(type)) {}
+        allocated_strings_(0),
+        elem_size_(TypeUtil::TypeSize(type)),
+        settings_vec_size_(Settings::Instance()->VecSize()){}
 
   /**
    * @return Raw Bytes
@@ -75,116 +82,51 @@ class Vector {
   /**
    * Reset vector with new elements.
    */
-  void DeepReset(uint64_t num_elems, const char *data) {
+  void Reset(uint64_t num_elems, const char *data, const uint64_t* null_bitmap, const RawTableBlock* block=nullptr) {
     Resize(num_elems);
-    std::memcpy(owned_data_.data(), data, num_elems * elem_size_);
-  }
-
-  void ShallowReset(uint64_t num_elems, const char *data) {
-    num_elems_ = num_elems;
-    data_ = data;
+    null_bitmap_.Reset(num_elems, null_bitmap);
+    if (elem_type_ == SqlType::Varchar) {
+      allocated_strings_.clear();
+      auto src_varlens = reinterpret_cast<const Varlen*>(data);
+      auto dst_varlens = reinterpret_cast<Varlen*>(owned_data_.data());
+      for (uint64_t i = 0; i < num_elems_; i++) {
+        if (src_varlens[i].Info().IsCompact()) {
+          ASSERT(block != nullptr, "Reset with compact varlen without block!");
+          auto offset = src_varlens[i].Info().CompactOffset();
+          auto size = src_varlens[i].Info().CompactSize();
+          auto src_data = block->VariableData() + offset;
+          dst_varlens[i] = Varlen::MakeNormal(size, src_data);
+        } else {
+          // Assumes normal varlens. Vector class should not have access to compact ones.
+          dst_varlens[i] = Varlen::MakeNormal(src_varlens[i].Info().NormalSize(), src_varlens[i].Data());
+        }
+      }
+    } else {
+      std::memcpy(owned_data_.data(), data, num_elems * elem_size_);
+    }
   }
 
   void Resize(uint64_t new_size) {
     if (new_size == num_elems_) return;
-    auto alloc_size = std::max(VEC_SIZE, new_size) * elem_size_;
-    owned_data_.resize(alloc_size * elem_size_);
+    auto alloc_size = std::max(settings_vec_size_, new_size) * elem_size_;
+    owned_data_.resize(alloc_size);
+    if (elem_type_ == SqlType::Varchar) {
+      allocated_strings_.resize(new_size);
+    }
     data_ = owned_data_.data();
     num_elems_ = new_size;
   }
 
  private:
   std::vector<char> owned_data_;
+  Bitmap null_bitmap_;
+  // For varchars.
+  std::vector<std::vector<char>> allocated_strings_;
   const char *data_;
   uint64_t num_elems_;
   SqlType elem_type_;
   uint64_t elem_size_;
-};
-
-/**
- * A block of data. Only used to prevent large contiguous allocation.
- */
-class Block {
- public:
-  /**
-   * Create a column oriented block of data.
-   */
-  Block(std::vector<std::vector<char>> &&data, uint64_t num_elems) : data_(std::move(data)), num_elems_(num_elems) {}
-
-  void Free(uint64_t col_idx);
-
-  void AddIds(int32_t block_id, uint64_t id_idx) {
-    block_id_ = block_id;
-    auto & id_col = data_[id_idx];
-    auto id_data = reinterpret_cast<int64_t*>(id_col.data());
-    for (uint64_t i = 0; i < num_elems_; i++) {
-      id_data[i] = i | (static_cast<int64_t>(block_id) << 32ull);
-    }
-  }
-
-  void AddCustomerIds(int32_t block_id, uint64_t id_idx) {
-    block_id_ = block_id;
-    auto & id_col = data_[id_idx];
-    auto id_data = reinterpret_cast<int64_t*>(id_col.data());
-    for (uint64_t i = 0; i < num_elems_; i++) {
-      id_data[i] = i | (static_cast<int64_t>(block_id) << 32ull);
-    }
-  }
-
-  /**
-   * @param col_idx index of column to read.
-   * @return raw data array.
-   */
-  [[nodiscard]] const char *ColumnData(uint64_t col_idx) const {
-    return data_[col_idx].data();
-  }
-
-  /**
-   * @tparam T C++ type of column elements.
-   * @param col_idx index of the column
-   * @return data array of the given type.
-   */
-  template<typename T>
-  const T *ColumnDataAs(uint64_t col_idx) const {
-    return reinterpret_cast<const T *>(data_[col_idx].data());
-  }
-
-  /**
-   * @param col_idx index of the column
-   * @return mutable data array.
-   */
-  char* MutableColumnData(uint64_t col_idx) {
-    return data_[col_idx].data();
-  }
-
-  /**
-   * @tparam T C++ type of column elements.
-   * @param col_idx index of the column
-   * @return mutable data array of the given type.
-   */
-  template<typename T>
-  T *MutableColumnDataAs(uint64_t col_idx) {
-    return reinterpret_cast<T *>(data_[col_idx].data());
-  }
-
-  /**
-   * @return Number of elements in this block.
-   */
-  [[nodiscard]] uint64_t NumElems() const {
-    return num_elems_;
-  }
-
-  /**
-   * @return Number of columns in this block.
-  */
-  [[nodiscard]] uint64_t NumCols() const {
-    return data_.size();
-  }
-
- private:
-  std::vector<std::vector<char>> data_;
-  uint64_t num_elems_;
-  int32_t block_id_{-1};
+  uint64_t settings_vec_size_;
 };
 
 /**
@@ -195,29 +137,20 @@ class Table {
   /**
    * Create a new table.
    */
-  Table(std::string name, Schema &&schema) : name_(std::move(name)), schema_(std::move(schema)) {
-//    usage_idx_ = schema_.NumCols();
-//    schema_.AddColumn(Column::ScalarColumn("usage", SqlType::Int64));
-//    id_idx_ = schema_.NumCols();
-//    schema_.AddColumn(Column::ScalarColumn("id", SqlType::Int64));
-//    embedding_idx_ = schema_.NumCols();
-//    schema_.AddColumn(Column::ScalarColumn("embedding_col", SqlType::Int64));
+  Table(std::string name, Schema &&schema, bool add_row_id) : name_(std::move(name)), schema_(std::move(schema)) {
+    if (add_row_id) {
+      id_idx_ = schema_.NumCols();
+      schema_.AddColumn(Column::ScalarColumn("row_id", SqlType::Int64));
+    }
   }
+
+  void InsertTableBlock(std::unique_ptr<TableBlock> && table_block);
 
   ~Table();
 
   [[nodiscard]] uint64_t IdIdx() const {
     return id_idx_;
   }
-
-  [[nodiscard]] uint64_t UsageIdx() const {
-    return usage_idx_;
-  }
-
-  [[nodiscard]] uint64_t EmbeddingIdx() const {
-    return embedding_idx_;
-  }
-
 
   /**
    * @return Table Name.
@@ -234,54 +167,26 @@ class Table {
   }
 
   /**
-   * Insert block of data in table.
-   * @param block Block to insert.
-   */
-  void InsertBlock(Block &&block) {
-//    uint32_t block_id = blocks_.size();
-//    if (Name() == "customer") {
-//      block.AddCustomerIds(block_id, IdIdx());
-//    } else {
-//      block.AddIds(block_id, IdIdx());
-//    }
-    blocks_.emplace_back(std::move(block));
-  }
-
-  /**
    * @return Number of blocks.
    */
   [[nodiscard]] uint64_t NumBlocks() const {
-    return blocks_.size();
+    return block_ids_.size();
   }
 
-  /**
-   * @param idx Index of the wanted block.
-   * @return Block at given index.
-   */
-  [[nodiscard]] const Block *BlockAt(uint64_t idx) const {
-    return &blocks_[idx];
-  }
-
-  /**
-   * @param idx Index of the wanted block.
-   * @return Mutable Block at given index.
-   */
-  [[nodiscard]] Block *MutableBlockAt(uint64_t idx) {
-    return &blocks_[idx];
+  const auto& BlockIDS() const {
+    return block_ids_;
   }
 
  private:
+  // Persisted somehow.
+  std::vector<int64_t> block_ids_;
   std::string name_;
   Schema schema_;
-  std::vector<Block> blocks_;
-  uint64_t id_idx_;
-  uint64_t embedding_idx_;
-  uint64_t usage_idx_;
-//  // Primary keys.
-//  std::vector<uint64_t> pks_;
-//  // Pairs of (this.fk, other.pk)
-//  using TableFK = std::vector<std::pair<uint64_t, uint64_t>>;
-//  std::unordered_map<const Table*, TableFK> fks_;
+  int64_t id_idx_{-1};
+
+  // In mem
+  std::shared_mutex table_lock_;
+  std::mutex table_modif_lock_; // TODO: Support concurrency.
 };
 
 /**
@@ -292,7 +197,7 @@ class BlockIterator {
   /**
    * Constructor
    */
-  BlockIterator(const Table *table, const Block *block);
+  BlockIterator(const Table *table, const BlockInfo *block, const std::vector<uint64_t>& cols_to_read);
 
   /**
    * Advance to next set of vectors.
@@ -303,7 +208,7 @@ class BlockIterator {
   /**
    * Reset iterator with new block.
    */
-  void Reset(const Block *block) {
+  void Reset(const BlockInfo *block) {
     block_ = block;
     curr_idx_ = 0;
   }
@@ -322,8 +227,10 @@ class BlockIterator {
 
  private:
   const Table *table_{nullptr};
-  const Block *block_{nullptr};
+  const BlockInfo *block_{nullptr};
+  std::vector<uint64_t> cols_to_read_;
   uint64_t curr_idx_{0};
+  const uint64_t* presence_;
   std::vector<std::unique_ptr<Vector>> vecs_;
 };
 
@@ -333,14 +240,9 @@ class BlockIterator {
 class TableIterator {
  public:
   /**
-   * Constructor for bounded scans.
-   */
-  explicit TableIterator(const Table *table, uint64_t block_lo, uint64_t block_hi);
-
-  /**
    * Constructor for full scan.
    */
-  explicit TableIterator(const Table *table);
+  explicit TableIterator(const Table *table, const std::vector<uint64_t>& cols_to_read);
 
   /**
    * Advance to next set of vectors.
@@ -364,10 +266,13 @@ class TableIterator {
 
  private:
   const Table *table_;
-  const Block *curr_block_;
-  uint64_t block_hi_;
+  std::vector<uint64_t> cols_to_read_;
+  BufferManager* buffer_manager_;
+  BlockInfo* curr_block_;
   uint64_t curr_block_idx_;
   std::unique_ptr<BlockIterator> block_iter_{nullptr};
 };
+
+
 
 }

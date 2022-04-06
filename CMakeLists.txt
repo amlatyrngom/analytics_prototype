@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native")
 
 # Sources Files
-file(GLOB_RECURSE SMART_ID_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/include/*.h)
+# TODO: Uncomment when execution engine fixed!
+#file(GLOB_RECURSE SMART_ID_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/include/*.h)
+
+file(GLOB_RECURSE SMART_ID_SOURCES ${PROJECT_SOURCE_DIR}/src/storage/*.cpp ${PROJECT_SOURCE_DIR}/src/common/*.cpp ${PROJECT_SOURCE_DIR}/src/include/storage/*.h ${PROJECT_SOURCE_DIR}/src/include/common/*.h)
+
 file(GLOB_RECURSE SMART_ID_TEST_SOURCES ${PROJECT_SOURCE_DIR}/test/test_util/*.cpp ${PROJECT_SOURCE_DIR}/test/test_util/*.h)
 include_directories(src/include)
 include_directories(test)
@@ -50,8 +54,11 @@ list(APPEND THIRD_PARTY_LIBS benchmark::benchmark)
 # Tessil
 add_subdirectory(third_party/robin-map)
 list(APPEND THIRD_PARTY_LIBS tsl::robin_map)
+add_subdirectory(third_party/ordered-map)
+list(APPEND THIRD_PARTY_LIBS tsl::ordered_map)
 
-
+# Modern SQLite cpp
+list(APPEND THIRD_PARTY_LIBS sqlite3)
 
 if( APPLE )
     set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@3)
@@ -70,6 +77,8 @@ list(APPEND THIRD_PARTY_LIBS cuckoofilter)
 add_library(smart_ids_shared SHARED ${SMART_ID_SOURCES})
 target_link_libraries(smart_ids_shared ${THIRD_PARTY_LIBS})
 
+add_executable(smartids_main src/main.cpp)
+target_link_libraries(smartids_main smart_ids_shared)
 
 # For Test
 add_library(smart_ids_test_shared SHARED ${SMART_ID_TEST_SOURCES})

@@ -1,3 +1,8 @@
+# TODO: Install db api
+cd third_party/sqlite_modern_cpp
+./configure && make && sudo make install
+
+
 sudo apt install clang-11
 sudo apt install openssl
 wget https://github.com/Kitware/CMake/releases/download/v3.21.0-rc1/cmake-3.21.0-rc1.tar.gz
@@ -10,3 +15,4 @@ make install
 export CC=clang-11
 export CXX=clang++-11
 cmake .. -DCMAKE_BUILD_TYPE=Release
+

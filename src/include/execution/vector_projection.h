@@ -1,6 +1,6 @@
 #pragma once
 #include "storage/table.h"
-#include "execution/filter.h"
+#include "storage/filter.h"
 
 namespace smartid {
 /**
@@ -57,6 +57,10 @@ class VectorProjection {
    */
   void AddVector(const Vector *vec) {
     vectors_.emplace_back(vec);
+  }
+
+  void SetVector(const Vector* vec, uint64_t idx) {
+    vectors_[idx] = vec;
   }
  private:
   std::vector<const Vector *> vectors_;

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-num_rows = 1000000
+num_rows = 100
 mod_val = 10
 
 # Keep these values to prevent slow nl join.
@@ -75,7 +75,7 @@ def gen_test1():
     col2 = [i % mod_val for i in range(num_rows)]
     df = pd.DataFrame({'col1': col1, 'col2': col2})
     print(df.head())
-    df.to_csv("test1.tbl", index=False, sep='|', header=False)
+    df.to_csv("test1.tbl", index=False, sep=',', header=False)
 
 
 def gen_test2():
@@ -84,7 +84,7 @@ def gen_test2():
     col3 = [str_values[i] for i in col2]
     df = pd.DataFrame({'col1': col1, 'col2': col2, 'col3': col3})
     print(df.head())
-    df.to_csv("test2.tbl", index=False, sep='|', header=False)
+    df.to_csv("test2.tbl", index=False, sep=',', header=False)
 
 
 def gen_test3():
@@ -96,16 +96,16 @@ def gen_test3():
     col6 = [date_values[i] for i in col2]
     df = pd.DataFrame({'col1': col1, 'col2': col2, 'col3': col3, 'col4': col4, 'col5': col5, 'col6': col6})
     print(df.head())
-    df.to_csv("test3.tbl", index=False, sep='|', header=False)
+    df.to_csv("test3.tbl", index=False, sep=',', header=False)
 
 
-gen_embedding_build()
-gen_embedding_probe()
-gen_embedding_interm()
-gen_build_table("small_build_table", small_build_table_size)
-gen_build_table("large_build_table", large_build_table_size)
-gen_probe_table("small_probe_table", small_build_table_size, small_probe_table_size)
-gen_probe_table("large_probe_table", large_build_table_size, large_probe_table_size)
+# gen_embedding_build()
+# gen_embedding_probe()
+# gen_embedding_interm()
+# gen_build_table("small_build_table", small_build_table_size)
+# gen_build_table("large_build_table", large_build_table_size)
+# gen_probe_table("small_probe_table", small_build_table_size, small_probe_table_size)
+# gen_probe_table("large_probe_table", large_build_table_size, large_probe_table_size)
 gen_test1()
-gen_test2()
-gen_test3()
+# gen_test2()
+# gen_test3()

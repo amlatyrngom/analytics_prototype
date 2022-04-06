@@ -354,9 +354,9 @@ void TableLoader::LoadJOBLight(const std::string &directory) {
 
 void TableLoader::LoadTestTables(const std::string &directory) {
   auto catalog = Catalog::Instance();
-  //CREATE_TABLE("test1", CreateTest1);
-  //CREATE_TABLE("test2", CreateTest2);
-  CREATE_TABLE("test3", CreateTest3);
+  CREATE_TABLE("test1", CreateTest1);
+//  CREATE_TABLE("test2", CreateTest2);
+//  CREATE_TABLE("test3", CreateTest3);
 }
 
 void TableLoader::LoadJoinTables(const std::string &directory) {
@@ -371,105 +371,128 @@ void TableLoader::LoadJoinTables(const std::string &directory) {
 }
 
 void TableLoader::LoadTable(Table *table, const std::string &filename) {
+  auto settings = Settings::Instance();
   auto schema = table->GetSchema();
   auto num_cols = schema.NumCols();
   // CSV Setup.
   csv::CSVFormat format;
   format.delimiter(',').no_header();
   std::vector<std::string> col_names;
+  std::vector<SqlType> col_types;
+  bool contains_varchar = false;
   col_names.reserve(num_cols);
   for (uint64_t i = 0; i < num_cols; i++) {
+    contains_varchar |= schema.GetColumn(i).Type() == SqlType::Varchar;
     col_names.emplace_back(schema.GetColumn(i).Name());
+    col_types.emplace_back(schema.GetColumn(i).Type());
   }
+
   format.column_names(col_names);
   csv::CSVReader reader(filename, format);
+
   // Read data in batches.
-  std::vector<std::vector<char>> cols{num_cols};
   uint64_t curr_batch = 0;
+  std::unique_ptr<TableBlock> table_block = nullptr;
+
   for (csv::CSVRow &row : reader) {
     // Reset current batch.
-    if (curr_batch % BLOCK_SIZE == 0) {
+    if (curr_batch % settings->BlockSize() == 0) {
       // Insert current batch in table.
-      if (curr_batch > 0) table->InsertBlock(Block{std::move(cols), curr_batch});
+      if (curr_batch > 0) table->InsertTableBlock(std::move(table_block));
       // Reset batch.
-      cols.clear();
-      curr_batch = 0;
-      cols.resize(num_cols);
-      for (uint64_t i = 0; i < num_cols; i++) {
-        const auto &col = schema.GetColumn(i);
-        cols[i].resize(TypeUtil::TypeSize(col.Type()) * BLOCK_SIZE);
-      }
+      auto col_types_copy = col_types;
+      table_block = std::make_unique<TableBlock>(std::move(col_types_copy));
     }
     // Read a single row.
     uint64_t curr_col = 0;
+    table_block->PrintBlock();
+    auto block_data_base = table_block->RawBlock()->BlockDataStart(); // For debugging.
+    auto presence = table_block->RawBlock()->MutablePresenceBitmap();
+//    std::cout << "PresenceOffset: " << (reinterpret_cast<char*>(presence)-block_data_base) << std::endl;
+    Bitmap::SetBit(presence, curr_batch);
     for (csv::CSVField &field: row) {
+      // Set row index
       const auto &col = schema.GetColumn(curr_col);
       auto col_type = col.Type();
-      auto type_size = TypeUtil::TypeSize(col_type);
-      char *col_data = cols[curr_col].data();
-      WriteCol(col_data + type_size * curr_batch, field, col_type);
+      char *col_data = table_block->RawBlock()->MutableColData(curr_col);
+//      std::cout << "ColOffset " << curr_col << ": " << (col_data-block_data_base) << std::endl;
+      uint64_t* bitmap = table_block->RawBlock()->MutableBitmapData(curr_col);
+//      std::cout << "BitmapOffset " << curr_col << ": " << (reinterpret_cast<char*>(bitmap)-block_data_base) << std::endl;
+      WriteCol(col_data, bitmap, field, curr_batch, col_type);
       curr_col++;
     }
     curr_batch++;
   }
   // Deal with last batch.
   if (curr_batch != 0) {
-    table->InsertBlock(Block{std::move(cols), curr_batch});
+    table->InsertTableBlock(std::move(table_block));
   }
 }
 
-void TableLoader::WriteCol(char *col_data, csv::CSVField &field, SqlType type) {
+void TableLoader::WriteCol(char *col_data, uint64_t* bitmap, csv::CSVField &field, uint64_t row_idx, SqlType type) {
   auto field_size = field.get<std::string_view>().size();
+
+  // Check for null
+  if (field_size == 0 && type != SqlType::Varchar) {
+    // Null. No need to do anything.
+    return;
+  } else if (field_size == 1 && type == SqlType::Varchar) {
+    auto val = field.get<std::string_view>();
+    if (val == "\\N") return;
+  }
+  // Non null
+  Bitmap::SetBit(bitmap, row_idx);
+  auto write_location = col_data + TypeUtil::TypeSize(type) * row_idx;
+//  std::cout << "FIELD: " << field << std::endl;
+//  std::cout << "Write Loc: " << (write_location - col_data) << std::endl;
   switch (type) {
     case SqlType::Char: {
       auto val = field.get<std::string_view>();
-      std::memcpy(col_data, &val[0], sizeof(char));
+      std::memcpy(write_location, &val[0], sizeof(char));
       break;
     }
     case SqlType::Int16: {
       auto val = field.get<int16_t>();
-      std::memcpy(col_data, &val, sizeof(int16_t));
+      std::memcpy(write_location, &val, sizeof(int16_t));
       break;
     }
     case SqlType::Int32: {
-      // Trick to bypass the fact that production_year is sometimes null.
-      auto val = field_size == 0 ? 3000 : field.get<int32_t>();
-      std::memcpy(col_data, &val, sizeof(int32_t));
+      auto val = field.get<int32_t>();
+      std::memcpy(write_location, &val, sizeof(int32_t));
       break;
     }
     case SqlType::Int64: {
       auto val = field.get<int64_t>();
-      std::memcpy(col_data, &val, sizeof(int64_t));
+      std::memcpy(write_location, &val, sizeof(int64_t));
       break;
     }
     case SqlType::Float32: {
       auto val = field.get<float>();
-      std::memcpy(col_data, &val, sizeof(float));
+      std::memcpy(write_location, &val, sizeof(float));
       break;
     }
     case SqlType::Float64: {
       auto val = field.get<double>();
-      std::memcpy(col_data, &val, sizeof(double));
+      std::memcpy(write_location, &val, sizeof(double));
       break;
     }
     case SqlType::Date: {
       auto val = field.get<std::string>();
       auto date_val = Date::FromString(val);
-      std::memcpy(col_data, &date_val, sizeof(Date));
+      std::memcpy(write_location, &date_val, sizeof(Date));
       break;
     }
     case SqlType::Varchar: {
       auto val = field.get<std::string_view>();
       auto str_size = val.size();
-      Varlen varlen{str_size, val.data()};
-      std::memcpy(col_data, &varlen, sizeof(Varlen));
+      auto varlen = Varlen::MakeNormal(str_size, val.data());
+      std::memcpy(write_location, &varlen, sizeof(Varlen));
       break;
     }
     case SqlType::Pointer: {
       std::cerr << "Unsupported Types!" << std::endl;
       break;
     }
-
   }
 }
 
