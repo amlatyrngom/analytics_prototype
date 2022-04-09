@@ -4,3 +4,4 @@ smartids_data
 *.tbl
 .ipynb_checkpoints
 installations
+sample_workload_data
