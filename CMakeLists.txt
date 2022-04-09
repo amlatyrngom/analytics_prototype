@@ -5,13 +5,36 @@ set(CMAKE_CXX_STANDARD 20)
 # CXX Flags
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native")
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("DEBUG MODE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+
 # Sources Files
 # TODO: Uncomment when execution engine fixed!
 #file(GLOB_RECURSE SMART_ID_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/include/*.h)
 
-file(GLOB_RECURSE SMART_ID_SOURCES ${PROJECT_SOURCE_DIR}/src/storage/*.cpp ${PROJECT_SOURCE_DIR}/src/common/*.cpp ${PROJECT_SOURCE_DIR}/src/include/storage/*.h ${PROJECT_SOURCE_DIR}/src/include/common/*.h)
+file(GLOB_RECURSE COMMON_SOURCES ${PROJECT_SOURCE_DIR}/src/common/*.cpp ${PROJECT_SOURCE_DIR}/src/include/common/*.h)
+file(GLOB_RECURSE STORAGE_SOURCES ${PROJECT_SOURCE_DIR}/src/storage/*.cpp  ${PROJECT_SOURCE_DIR}/src/include/storage/*.h )
+file(GLOB_RECURSE OPTIMIZER_SOURCES ${PROJECT_SOURCE_DIR}/src/optimizer/*.cpp  ${PROJECT_SOURCE_DIR}/src/include/optimizer/*.h )
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/expr_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/plan_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/scan_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/plan_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/expr_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/plan_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/expr_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/scan_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/nodes/scan_node.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/expr.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/binary_comp.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/init.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/execution_factory.cpp)
+list(APPEND SMART_ID_SOURCES ${COMMON_SOURCES} ${STORAGE_SOURCES} ${OPTIMIZER_SOURCES} ${EXECUTION_SOURCES})
 
 file(GLOB_RECURSE SMART_ID_TEST_SOURCES ${PROJECT_SOURCE_DIR}/test/test_util/*.cpp ${PROJECT_SOURCE_DIR}/test/test_util/*.h)
+
+
 include_directories(src/include)
 include_directories(test)
 include_directories(bench)
@@ -57,8 +80,12 @@ list(APPEND THIRD_PARTY_LIBS tsl::robin_map)
 add_subdirectory(third_party/ordered-map)
 list(APPEND THIRD_PARTY_LIBS tsl::ordered_map)
 
-# Modern SQLite cpp
-list(APPEND THIRD_PARTY_LIBS sqlite3)
+# SQLite cpp
+add_subdirectory(third_party/SQLiteCpp)
+list(APPEND THIRD_PARTY_LIBS sqlite3 SQLiteCpp)
+
+# Toml
+include_directories(SYSTEM third_party/tomlplusplus/include)
 
 if( APPLE )
     set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@3)
@@ -83,7 +110,7 @@ target_link_libraries(smartids_main smart_ids_shared)
 # For Test
 add_library(smart_ids_test_shared SHARED ${SMART_ID_TEST_SOURCES})
 target_link_libraries(smart_ids_test_shared smart_ids_shared)
-add_subdirectory(test)
+add_subdirectory(test/storage)
 
 # For Benchmarking
-add_subdirectory(bench)
+#add_subdirectory(bench)

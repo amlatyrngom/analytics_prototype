@@ -1,11 +1,14 @@
 #include "execution/vector_ops.h"
+#include "storage/filter.h"
+#include "storage/vector.h"
+#include "execution/ops.h"
 
 namespace smartid {
 ///////////////////////////////////////
 //// Comparison with 2 vectors
 //////////////////////////////////////
 template <typename T, typename FN>
-void DoUpdate(FN fn, Filter* filter) {
+void DoUpdate(FN fn, Bitmap* filter) {
   if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, Date>) {
     filter->SafeUpdate(fn);
   } else {
@@ -15,7 +18,7 @@ void DoUpdate(FN fn, Filter* filter) {
 
 template <typename Op, typename cpp_type>
 __attribute__((noinline))
-void TemplatedBinaryCompSame(const cpp_type& val1, const cpp_type* data2, Filter* filter) {
+void TemplatedBinaryCompSame(const cpp_type& val1, const cpp_type* data2, Bitmap* filter) {
   // Left hand side is a single value.
   auto fn = [&](sel_t i) {
     return Op::Apply(val1, data2[i]);
@@ -25,7 +28,7 @@ void TemplatedBinaryCompSame(const cpp_type& val1, const cpp_type* data2, Filter
 
 template <typename Op, typename cpp_type>
 __attribute__((noinline))
-void TemplatedBinaryCompSame(const cpp_type* data1, const cpp_type& val2, Filter* filter) {
+void TemplatedBinaryCompSame(const cpp_type* data1, const cpp_type& val2, Bitmap* filter) {
   // Left hand side is a single value.
   auto fn = [&](sel_t i) {
     return Op::Apply(data1[i], val2);
@@ -35,7 +38,7 @@ void TemplatedBinaryCompSame(const cpp_type* data1, const cpp_type& val2, Filter
 
 template <typename Op, typename cpp_type>
 __attribute__((noinline))
-void TemplatedBinaryCompSame(const cpp_type* data1, const cpp_type* data2, Filter* filter) {
+void TemplatedBinaryCompSame(const cpp_type* data1, const cpp_type* data2, Bitmap* filter) {
   // Left hand side is a single value.
   auto fn = [&](sel_t i) {
     return Op::Apply(data1[i], data2[i]);
@@ -47,7 +50,7 @@ void TemplatedBinaryCompSame(const cpp_type* data1, const cpp_type* data2, Filte
 
 template <typename Op, typename cpp_type>
 __attribute__((noinline))
-void TemplatedBinaryCompSame(const Vector* in1, const Vector* in2, Filter* filter) {
+void TemplatedBinaryCompSame(const Vector* in1, const Vector* in2, Bitmap* filter) {
   auto data1 = in1->DataAs<cpp_type>();
   auto data2 = in2->DataAs<cpp_type>();
   if (in1->NumElems() == 1) {
@@ -80,7 +83,7 @@ void TemplatedBinaryCompSame(const Vector* in1, const Vector* in2, Filter* filte
     return;
 
 
-void BinaryCompSameType(const Vector *in1, const Vector *in2, Filter *filter, OpType op_type) {
+void BinaryCompSameType(const Vector *in1, const Vector *in2, Bitmap *filter, OpType op_type) {
   switch (op_type) {
     OP_TYPE(TEMPLATED_BINARY_COMP_SAME_BY_TYPE, NOOP)
     default: {
@@ -89,7 +92,7 @@ void BinaryCompSameType(const Vector *in1, const Vector *in2, Filter *filter, Op
   }
 }
 
-void VectorOps::BinaryCompVector(const Vector *in1, const Vector *in2, Filter *filter, OpType op_type) {
+void VectorOps::BinaryCompVector(const Vector *in1, const Vector *in2, Bitmap *filter, OpType op_type) {
   ASSERT(in1->ElemType() == in2->ElemType(), "Binary comparison on distinct types!");
   BinaryCompSameType(in1, in2, filter, op_type);
 }

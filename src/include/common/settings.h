@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/util.h"
+
 namespace smartid {
 
 struct Settings {
@@ -14,11 +16,16 @@ struct Settings {
   }
 
   [[nodiscard]] uint64_t VecSize() const {
-    return vec_size_;
+    return 1 << log_vec_size_;
   }
 
-  void SetVecSize(uint64_t s) {
-    vec_size_ = s;
+  [[nodiscard]] uint64_t LogVecSize() const {
+    return log_vec_size_;
+  }
+
+  void SetLogVecSize(uint64_t s) {
+    ASSERT(s >= 6, "Vec size too small!");
+    log_vec_size_ = s;
   }
 
   [[nodiscard]] uint64_t BlockSize() const {
@@ -30,6 +37,7 @@ struct Settings {
   }
 
   void SetLogBlockSize(uint64_t s) {
+    ASSERT(s >= log_vec_size_, "Block size too small!");
     log_block_size_ = s;
   }
 
@@ -67,7 +75,7 @@ struct Settings {
 
 
  private:
-  uint64_t vec_size_{1 << 10}; // Keep small to prevent too sparse bitmap.
+  uint64_t log_vec_size_{10}; // Keep small to prevent too sparse bitmap.
   uint64_t log_block_size_{18};
   uint64_t buffer_mem_{(1ull << 30) << 3}; // 8GB of memory.
   uint64_t buffer_disk_{(1ull << 30) << 8}; // 256GB of disk.

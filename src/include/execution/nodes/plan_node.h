@@ -1,7 +1,6 @@
 #pragma once
-#include "execution/execution_common.h"
-#include "common/catalog.h"
-#include "expr_node.h"
+#include <vector>
+#include <cstdint>
 
 namespace smartid {
 
@@ -23,7 +22,7 @@ class PlanNode {
  public:
   explicit PlanNode(PlanType plan_type, std::vector<PlanNode*>&& children) : plan_type_(plan_type), children_(std::move(children)) {}
 
-  uint64_t NumChildren() const {
+  [[nodiscard]] uint64_t NumChildren() const {
     return children_.size();
   }
 

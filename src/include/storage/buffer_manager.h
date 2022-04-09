@@ -12,7 +12,9 @@ class database;
 namespace smartid {
 
 class BlockLRU;
+class InfoStore;
 
+// TODO: Unimplemented things: full restoration from DB state; write/read cloud (S3); ...
 class BufferBlock {
  public:
   // Give ownership of raw data to buffer manager.
@@ -29,7 +31,7 @@ struct BlockInfo {
   // Persited in DB.
   int64_t block_id;
   int64_t size;
-  bool deleted{true}; // False when block is deleted. Use for garbage collection.
+  bool deleted{false}; // True when block is deleted. Use for garbage collection.
   bool on_disk{false};
 
   // In Mem
@@ -42,12 +44,7 @@ struct BlockInfo {
 
 class BufferManager {
  public:
-
-  // Create singleton instance.
-  static BufferManager *Instance() {
-    static BufferManager instance;
-    return &instance;
-  }
+  explicit BufferManager(InfoStore* info_store);
 
   // Get a new unique block id.
   int64_t NewBlockID() {
@@ -56,7 +53,7 @@ class BufferManager {
   }
 
   // Add a block to the buffer manager, which takes ownership of associated data.
-  void AddBlock(BufferBlock* buffer_block);
+  BlockInfo* AddBlock(BufferBlock* buffer_block);
 
   // Unpin a block.
   void Unpin(BlockInfo *block_info, bool dirty, bool should_delete=false);
@@ -64,20 +61,24 @@ class BufferManager {
   // Pin a block.
   BlockInfo* Pin(int64_t block_id);
 
+  // Get a block without pinning it.
+  // When this method is used, data should not be accessed.
+  BlockInfo* GetInfo(int64_t block_id);
+
   // Make outline.
   ~BufferManager();
 
  private:
-  // Private Constructor prevents initialization.
-  BufferManager();
+
+  void RestoreFromDB();
 
   static std::string GetBlockFilename(uint64_t block_id);
-
-  static std::string GetDBFilename();
+  static std::string GetBlockFilenamePrefix();
+  static std::string GetBlockDir();
 
   // Update DB
-  void PersistBlockInfo(BlockInfo* block_info);
-  // Update DB
+  void InsertBlockInfo(BlockInfo* block_info);
+  void UpdateBlockInfo(BlockInfo* block_info);
   void DeleteBlockInfo(BlockInfo* block_info);
 
 
@@ -100,7 +101,7 @@ class BufferManager {
 
 
   std::mutex global_m;
-  std::unique_ptr<sqlite::database> db_;
+  InfoStore* info_store_;
   int64_t curr_block_id_{0};
   int64_t used_mem_space_{0};
   int64_t used_disk_space_{0};

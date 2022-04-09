@@ -14,10 +14,11 @@
 
 namespace smartid {
 /**
- * Supported types.
+ * Supported types. (char is uint8_t to disambiguate from int8_t.)
  */
 #define SQL_TYPE(ARITH, OTHER, ...) \
-  OTHER(Char, char, __VA_ARGS__)                  \
+  OTHER(Char, uint8_t, __VA_ARGS__)                  \
+  ARITH(Int8, int8_t, __VA_ARGS__)                  \
   ARITH(Int16, int16_t, __VA_ARGS__)                  \
   ARITH(Int32, int32_t, __VA_ARGS__)                  \
   ARITH(Int64, int64_t, __VA_ARGS__)                  \
@@ -90,46 +91,30 @@ struct VarlenInfo {
  */
 class Varlen {
  public:
-  /**
-   * Constructor
-   */
-//  Varlen(int64_t size, const char *data) : size_(size) {
-//    if (size == 0) {
-//      data_ = nullptr;
-//      return;
-//    }
-//    if (size > 0) {
-//      data_ = reinterpret_cast<char *>(std::malloc(size));
-//      if (data != nullptr) {
-//        std::memcpy(data_, data, size);
-//      }
-//    }
-//    if (size < 0) {
-//      // User is responsible for setting string that does not belong to the varlen.
-//      data_ = nullptr;
-//    }
-//  }
+  // Should be called explicitly to delete memory.
+  void Free();
+
+  // Make
+  static Varlen MakeCompact(uint64_t offset, uint64_t size);
+
+  static Varlen MakeNormal(uint64_t size, const char* data);
+
+  static Varlen MakeManagedNormal(uint64_t size, const char* data, std::vector<char> & alloc_buffer);
 
   /**
-   * Should be called explicitly by table deletor to free allocated memory.
+   * @return Raw data array.
    */
-  void Free() {
-    if (!info_.IsCompact() && data_ != nullptr) {
-      std::free(data_);
-      data_ = nullptr;
-    }
+  [[nodiscard]] const char *Data() const {
+    return data_;
   }
 
-  [[nodiscard]] int Comp(const Varlen &other) const {
-    // Only works with normal varlens.
-    auto this_size = info_.NormalSize();
-    auto other_size = info_.NormalSize();
-    auto min_size = std::min(this_size, other_size);
-    auto cmp = std::memcmp(data_, other.data_, min_size);
-    if (cmp != 0) return cmp;
-    if (this_size == other_size) return 0;
-    return this_size < other_size ? -1 : 1;
+
+  [[nodiscard]] const auto& Info() const {
+    return info_;
   }
+
+  // Compare to varlen.
+  [[nodiscard]] int Comp(const Varlen &other) const;
 
   [[nodiscard]] bool operator<(const Varlen &other) const {
     return Comp(other) < 0;
@@ -150,42 +135,7 @@ class Varlen {
     return Comp(other) >= 0;
   }
 
-  /**
-   * @return Raw data array.
-   */
-  [[nodiscard]] const char *Data() const {
-    return data_;
-  }
 
-  static Varlen MakeCompact(uint64_t offset, uint64_t size) {
-    Varlen v;
-    v.info_.SetCompact(true);
-    v.info_.SetCompactOffset(offset);
-    v.info_.SetCompactSize(size);
-    v.data_ = nullptr;
-    return v;
-  }
-
-  static Varlen MakeNormal(uint64_t size, const char* data) {
-    Varlen v;
-    v.info_.SetCompact(false);
-    v.info_.SetNormalSize(size);
-    if (size == 0) {
-      v.data_ = nullptr;
-      return v;
-    }
-    v.data_ = reinterpret_cast<char *>(std::malloc(size));
-    if (data != nullptr) {
-      std::memcpy(v.data_, data, size);
-    } else {
-      std::memset(v.data_, 0, size);
-    }
-    return v;
-  }
-
-  const auto& Info() const {
-    return info_;
-  }
 
  private:
   VarlenInfo info_; // Negative when data does not belong to the varlen.
@@ -196,55 +146,28 @@ class Varlen {
  * Set of helper functions.
  */
 struct TypeUtil {
-  /**
-   * Return raw size of a given type.
-   */
-  static uint64_t TypeSize(SqlType type) {
-    switch (type) {
-      case SqlType::Char: return 1;
-      case SqlType::Int16: return 2;
-      case SqlType::Int32: return 4;
-      case SqlType::Int64: return 8;
-      case SqlType::Float32: return 4;
-      case SqlType::Float64: return 8;
-      case SqlType::Date: return 4;
-      case SqlType::Varchar: return 16;
-      case SqlType::Pointer: return 8;
-    }
-  }
 
-  static bool IsArithmetic(SqlType t) {
-    return t == SqlType::Int64 || t == SqlType::Int32 || t == SqlType::Int16 || t == SqlType::Float32 || t == SqlType::Float64;
-  }
+  // Return the size of type.
+  static uint64_t TypeSize(SqlType type);
 
-  static bool AreCompatible(SqlType t1, SqlType t2) {
-    // Same type
-    if (t1 == t2) return true;
-    if (IsArithmetic(t1) && IsArithmetic(t2)) {
-      return true;
-    }
-    return false;
-  }
+  // Convert type to name
+  static std::string TypeToName(SqlType type);
 
-  static SqlType Promote(SqlType t1, SqlType t2) {
-    // Return if types are equal
-    if (!AreCompatible(t1, t2)) {
-      // TODO(Amadou): Throw some kind of error.
-      std::cerr << "Cannot promote incompatible type!!!!" << std::endl;
-      return t1;
-    }
-    if (t1 == t2) return t1;
-    if (t1 == SqlType::Float64 || t2 == SqlType::Float64) return SqlType::Float64;
-    if (t1 == SqlType::Float32 || t2 == SqlType::Float32) return SqlType::Float32;
-    if (t1 == SqlType::Int64 || t2 == SqlType::Int64) return SqlType::Int64;
-    return SqlType::Int32;
-  }
+  // Convert name to type.
+  static SqlType NameToType(const std::string& name);
+
+  // Check if type is arithmetic.
+  static bool IsArithmetic(SqlType t);
+
+  // Check if two types are compatible.
+  static bool AreCompatible(SqlType t1, SqlType t2);
+
+  // Promote to common type.
+  static SqlType Promote(SqlType t1, SqlType t2);
 };
 
-/**
- * The a singlar Value type.
- */
-using Value = std::variant<char, int16_t, int32_t, int64_t, float, double, Date, Varlen, uintptr_t>;
+// A singular value.
+using Value = std::variant<uint8_t, int8_t, int16_t, int32_t, int64_t, float, double, Date, Varlen, uintptr_t>;
 
 struct FKConstraint {
   FKConstraint() = default;
@@ -270,43 +193,33 @@ class Column {
   /**
    * Constructor
    */
-  Column(std::string name, SqlType type, bool owns_varchar, bool is_pk, FKConstraint && fk_constraint)
+  Column(std::string name, SqlType type, bool is_pk, bool is_fk, std::string fk_name, bool dict_encode)
   : name_(std::move(name))
   , type_(type)
-  , owns_varchar_(owns_varchar)
   , is_pk_(is_pk)
-  , fk_constraint_(std::move(fk_constraint)) {}
+  , is_fk_(is_fk)
+  , fk_name_(std::move(fk_name))
+  , dict_encode_(dict_encode) {}
 
-  ///////////////////////////
-  /// Static Constructors
-  ///////////////////////////
-  static Column ScalarColumn(const std::string& name, SqlType type) {
-    return Column(name, type, false, false, {});
-  }
+  Column(std::string name, SqlType type): Column(std::move(name), type, false, false, "", false) {}
 
-  static Column ScalarColumnWithConstraint(const std::string& name, SqlType type, bool is_pk, FKConstraint && fk_constraint) {
-    return Column(name, type, false, is_pk, std::move(fk_constraint));
-  }
+  Column(std::string name, SqlType type, bool is_pk): Column(std::move(name), type, is_pk, false, "", false) {}
 
-  static Column VarcharColumn(const std::string& name, SqlType type, bool owns_varchar) {
-    return Column(name, type, owns_varchar, false, {});
-  }
-
-  static Column VarcharColumnWithConstraint(const std::string& name, SqlType type, bool owns_varchar, bool is_pk, FKConstraint && fk_constraint) {
-    return Column(name, type, owns_varchar, is_pk, std::move(fk_constraint));
-  }
-
+  /**
+   * Hack to allow default initialization in vectors.
+   */
+  Column() = default;
 
   [[nodiscard]] bool IsPK() const {
     return is_pk_;
   }
 
   [[nodiscard]] bool IsFK() const {
-    return !fk_constraint_.refs_.empty();
+    return is_fk_;
   }
 
-  [[nodiscard]] const FKConstraint& FK() const {
-    return fk_constraint_;
+  [[nodiscard]] const std::string FKName() const {
+    return fk_name_;
   }
 
   /**
@@ -323,16 +236,17 @@ class Column {
     return type_;
   }
 
-  bool OwnsVarchar() const {
-    return owns_varchar_;
+  [[nodiscard]] bool DictEncode() const {
+    return dict_encode_;
   }
 
  private:
   std::string name_;
   SqlType type_;
-  bool owns_varchar_;
   bool is_pk_;
-  FKConstraint fk_constraint_;
+  bool is_fk_;
+  std::string fk_name_; // Name in the central table.
+  bool dict_encode_;
 };
 
 /**
@@ -375,6 +289,10 @@ class Schema {
 
   void AddColumn(Column&& col) {
     cols_.emplace_back(std::move(col));
+  }
+
+  [[nodiscard]] const auto& Cols() const {
+    return cols_;
   }
 
  private:

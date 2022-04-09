@@ -1,22 +1,28 @@
 #pragma once
 #include <memory>
-
-#include "execution/executors/plan_executor.h"
-#include "execution/executors/hash_aggr_executor.h"
-#include "execution/executors/hash_join_executor.h"
-#include "execution/executors/materializer_executor.h"
-#include "execution/executors/projection_executor.h"
-#include "execution/executors/scan_executor.h"
-#include "execution/executors/sort_executor.h"
-#include "execution/executors/static_aggr_executor.h"
-#include "execution/executors/build_rowid_index_executor.h"
-#include "execution/execution_context.h"
+#include <vector>
+#include "common/types.h"
+#include "execution/nodes/expr_node.h"
 
 
 namespace smartid {
+class Catalog;
+class Table;
+class ExprNode;
+class ConstantNode;
+class ColumnNode;
+class BinaryCompNode;
+class PlanNode;
+class NoopOutputNode;
+class PrintNode;
+class ScanNode;
+class PlanExecutor;
+class ExprExecutor;
+class ExecutionContext;
+
 class ExecutionFactory {
  public:
-  ExecutionFactory() = default;
+  ExecutionFactory(Catalog* catalog): catalog_(catalog) {}
 
   // Noop
   NoopOutputNode* MakeNoop(PlanNode* child);
@@ -24,42 +30,42 @@ class ExecutionFactory {
   // Print
   PrintNode* MakePrint(PlanNode* child);
 
-  // Hash aggregation
-  HashAggregationNode* MakeHashAggregation(PlanNode *child,
-                                        std::vector<uint64_t> &&group_by_keys,
-                                        std::vector<std::pair<uint64_t, AggType>> &&aggs);
-
-  // Hash join
-  HashJoinNode* MakeHashJoin(PlanNode *build,
-                                 PlanNode *probe,
-                                 std::vector<uint64_t> &&build_key_cols,
-                                 std::vector<uint64_t> &&probe_key_cols,
-                                 std::vector<std::pair<uint64_t, uint64_t>> &&projections,
-                                 JoinType join_type);
-
-  // Materializer
-  MaterializerNode* MakeMaterializer(PlanNode* child, Table* table);
-
-  // Projection
-  ProjectionNode* MakeProjection(PlanNode* child, std::vector<ExprNode*>&& projections);
+//  // Hash aggregation
+//  HashAggregationNode* MakeHashAggregation(PlanNode *child,
+//                                        std::vector<uint64_t> &&group_by_keys,
+//                                        std::vector<std::pair<uint64_t, AggType>> &&aggs);
+//
+//  // Hash join
+//  HashJoinNode* MakeHashJoin(PlanNode *build,
+//                                 PlanNode *probe,
+//                                 std::vector<uint64_t> &&build_key_cols,
+//                                 std::vector<uint64_t> &&probe_key_cols,
+//                                 std::vector<std::pair<uint64_t, uint64_t>> &&projections,
+//                                 JoinType join_type);
+//
+//  // Materializer
+//  MaterializerNode* MakeMaterializer(PlanNode* child, Table* table);
+//
+//  // Projection
+//  ProjectionNode* MakeProjection(PlanNode* child, std::vector<ExprNode*>&& projections);
 
   // Scan
   ScanNode* MakeScan(Table* table,
+                     std::vector<uint64_t> && cols_to_read,
                      std::vector<ExprNode *> &&projections,
-                     std::vector<ExprNode *> &&filters, bool record_rows=false);
+                     std::vector<ExprNode *> &&filters);
 
   ScanNode* MakeScan(const Table* table,
+                     std::vector<uint64_t> && cols_to_read,
                      std::vector<ExprNode *> &&projections,
-                     std::vector<ExprNode *> &&filters, bool record_rows=false) {
-    return MakeScan(Catalog::Instance()->GetTable(table->Name()), std::move(projections), std::move(filters), record_rows);
-  }
+                     std::vector<ExprNode *> &&filters);
 
 
-  // Sort (orderby)
-  SortNode* MakeSort(PlanNode *child, std::vector<std::pair<uint64_t, SortType>> &&sort_keys);
-
-  // Static aggregation
-  StaticAggregateNode* MakeStaticAggregation(PlanNode *child, std::vector<std::pair<uint64_t, AggType>> &&aggs);
+//  // Sort (orderby)
+//  SortNode* MakeSort(PlanNode *child, std::vector<std::pair<uint64_t, SortType>> &&sort_keys);
+//
+//  // Static aggregation
+//  StaticAggregateNode* MakeStaticAggregation(PlanNode *child, std::vector<std::pair<uint64_t, AggType>> &&aggs);
 
   // Constant expr
   template<typename T>
@@ -76,22 +82,20 @@ class ExecutionFactory {
   // Column expr
   ColumnNode* MakeCol(const Table* table, const std::string& col_name);
 
-  // Param expr
-  ParamNode* MakeParam(const std::string& param_name);
-
+//  // Param expr
+//  ParamNode* MakeParam(const std::string& param_name);
+//
   // Binary comparison
   BinaryCompNode* MakeBinaryComp(ExprNode *left, ExprNode *right, OpType op);
-
-  // Binary arithmetic
-  BinaryArithNode* MakeBinaryArith(ExprNode *left, ExprNode *right, OpType op, SqlType res_type);
-
-  // Embedding
-  EmbeddingCheckNode* MakeEmbeddingCheck(ExprNode* child, int16_t mask);
-
+//
+//  // Binary arithmetic
+//  BinaryArithNode* MakeBinaryArith(ExprNode *left, ExprNode *right, OpType op, SqlType res_type);
+//
+//  // Embedding
+//  EmbeddingCheckNode* MakeEmbeddingCheck(ExprNode* child, int16_t mask);
+//
   // Create Exec Context
-  static std::unique_ptr<ExecutionContext> MakeExecContext() {
-    return std::make_unique<ExecutionContext>();
-  }
+  static std::unique_ptr<ExecutionContext> MakeExecContext();
 
   ExecutionContext* MakeStoredExecContext() {
     auto exec_ctx = MakeExecContext();
@@ -114,6 +118,7 @@ class ExecutionFactory {
   static std::vector<std::unique_ptr<ExprExecutor>> MakeExprExecutors(const std::vector<ExprNode *>& nodes, ExecutionContext* ctx);
 
  private:
+  Catalog* catalog_;
   std::vector<std::unique_ptr<PlanNode>> plans_{};
   std::vector<std::unique_ptr<ExprNode>> exprs_{};
   std::vector<std::unique_ptr<PlanExecutor>> plan_executors_{};

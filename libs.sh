@@ -1,6 +1,5 @@
-# TODO: Install db api
-cd third_party/sqlite_modern_cpp
-./configure && make && sudo make install
+mkdir -p installations
+cd installations
 
 
 sudo apt install clang-11

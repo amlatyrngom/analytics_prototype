@@ -35,23 +35,6 @@ enum class SortType {
   DESC,
 };
 
-#define OP_TYPE(COMP, ARITH) \
-COMP(LT, ops::Lt)\
-COMP(LE, ops::Le)\
-COMP(NE, ops::Ne)\
-COMP(EQ, ops::Eq)\
-COMP(GT, ops::Gt)\
-COMP(GE, ops::Ge)\
-ARITH(ADD, ops::Add)\
-ARITH(MUL, ops::Mul)\
-ARITH(SUB, ops::Sub)\
-ARITH(DIV, ops::Div)
-
-#define ENUM_DEFINER(entry, ...) entry,
-enum class OpType {
-  OP_TYPE(ENUM_DEFINER, ENUM_DEFINER)
-};
-#undef ENUM_DEFINER
 
 struct HTEntry {
   HTEntry *next;

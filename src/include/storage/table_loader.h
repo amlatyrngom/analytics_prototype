@@ -21,7 +21,9 @@ struct TableLoader {
    * Load test files.
    * @param directory The directory with the data files.
    */
-  static void LoadTestTables(const std::string &directory);
+  static void LoadTestTables(Catalog* catalog, const std::string &directory);
+
+  static void LoadWorkload(Catalog* catalog, const std::string &toml_file);
 
   /**
    * Load test files.

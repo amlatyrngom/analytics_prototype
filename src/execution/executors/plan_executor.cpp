@@ -1,6 +1,12 @@
 #include "execution/executors/plan_executor.h"
+#include "storage/vector_projection.h"
+#include "storage/vector.h"
 
 namespace smartid {
+
+PlanExecutor::PlanExecutor(std::vector<std::unique_ptr<PlanExecutor>> &&children) : children_(std::move(children)){}
+PlanExecutor::~PlanExecutor() = default;
+
 
 ////////////////////////////
 /// No Op.
@@ -30,7 +36,7 @@ template<typename T>
 static void TemplatedPrintElem(const Vector *vec, uint64_t row) {
   T elem = vec->DataAs<T>()[row];
   if constexpr (std::is_same_v<T, Varlen>) {
-    std::string attr(elem.Data(), elem.Size());
+    std::string attr(elem.Data(), elem.Info().NormalSize());
     std::cout << attr;
   } else if constexpr (std::is_same_v<T, Date>) {
     std::cout << elem.ToString();

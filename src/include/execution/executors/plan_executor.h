@@ -3,13 +3,14 @@
 #include "execution/nodes/plan_node.h"
 
 namespace smartid {
+class VectorProjection;
 
 class PlanExecutor {
  public:
   /**
    * Instantiate executor
    */
-  explicit PlanExecutor(std::vector<std::unique_ptr<PlanExecutor>>&& children) : children_(std::move(children)){}
+  explicit PlanExecutor(std::vector<std::unique_ptr<PlanExecutor>>&& children);
 
   virtual const VectorProjection *Next() = 0;
 
@@ -21,23 +22,11 @@ class PlanExecutor {
     return children_[idx].get();
   }
 
-  virtual ~PlanExecutor() = default;
+  virtual ~PlanExecutor();
 
   VectorProjection *Result() {
     return result_.get();
   }
-
-
-  void CollectStats() {
-    for (auto& child: children_) {
-      child->CollectStats();
-    }
-    ReportStats();
-  }
-
- protected:
-  // Default implementation does nothing.
-  virtual void ReportStats() {}
 
  protected:
   std::unique_ptr<VectorProjection> result_{nullptr};

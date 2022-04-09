@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/util.h"
+#include "common/types.h"
 #include "storage/filter.h"
 #include "storage/buffer_manager.h"
 
@@ -156,7 +157,6 @@ class TableBlock : public BufferBlock {
 
   explicit TableBlock(std::vector<SqlType>&& col_types)
       : col_types_(std::move(col_types)) {
-    std::cout << "Num Cols: " << col_types_.size() << std::endl;
     raw_block_ = RawTableBlock::AllocateAndSetupRawBlock(col_types_, 0);
   }
 
@@ -197,12 +197,12 @@ class TableBlock : public BufferBlock {
     return hot_;
   }
 
-  static TableBlock* FromBlockInfo(BlockInfo* block_info) {
-    return dynamic_cast<TableBlock*>(block_info->buffer_block);
+  static RawTableBlock* FromBlockInfo(BlockInfo* block_info) {
+    return reinterpret_cast<RawTableBlock*>(block_info->data);
   }
 
-  static const TableBlock* FromBlockInfo(const BlockInfo* block_info) {
-    return dynamic_cast<const TableBlock*>(block_info->buffer_block);
+  static const RawTableBlock* FromBlockInfo(const BlockInfo* block_info) {
+    return reinterpret_cast<const RawTableBlock*>(block_info->data);
   }
 
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include "common/util.h"
 
 namespace smartid {
@@ -85,6 +84,18 @@ class Bitmap {
     Bitmap::Map(Words(), num_words_, f);
   }
 
+  template<typename F>
+  inline void SafeMap(F f) const {
+    auto sel = Selectivity();
+    if (sel < 0.2) {
+      Map(f);
+    } else {
+      for (uint64_t i = 0; i < num_bits_; i++) {
+        f(i);
+      }
+    }
+  }
+
   template<typename P>
   static inline void Update(uint64_t* words, uint64_t num_bits, P p) {
     auto num_words = ComputeNumWords(num_bits);
@@ -102,8 +113,8 @@ class Bitmap {
     }
   }
 
-  template<typename F>
-  static inline void UpdateFull(F f, uint64_t* words, uint64_t num_bits) {
+  template<typename P>
+  static inline void UpdateFull(uint64_t* words, uint64_t num_bits, P p) {
     auto num_words = ComputeNumWords(num_bits);
     auto num_full_words = (num_bits % BITS_PER_WORD == 0) ? num_words : num_words - 1;
     // This first loop processes all FULL words in the bit vector. It should be
@@ -112,7 +123,7 @@ class Bitmap {
       uint64_t word_result = 0;
       for (uint64_t j = 0; j < BITS_PER_WORD; j++) {
         auto idx = i * BITS_PER_WORD + j;
-        word_result |= static_cast<uint64_t>(f(idx)) << j;
+        word_result |= static_cast<uint64_t>(p(idx)) << j;
       }
       words[i] &= word_result;
     }
@@ -125,13 +136,12 @@ class Bitmap {
         const auto t = word & -word;
         const auto r = __builtin_ctzl(word);
         const auto idx = static_cast<sel_t>((num_words - 1) * BITS_PER_WORD + r);
-        word_result |= static_cast<uint64_t>(f(idx)) << static_cast<uint64_t>(r);
+        word_result |= static_cast<uint64_t>(p(idx)) << static_cast<uint64_t>(r);
         word ^= t;
       }
       words[num_words - 1] &= word_result;
     }
   }
-
 
   /**
    * Selective compute update of Bitmap.
@@ -144,9 +154,19 @@ class Bitmap {
   /**
    * Full compute update of Bitmap. The function should be without side-effects.
    */
-  template<typename F>
-  inline void UpdateFull(F f) {
-    Bitmap::UpdateFull(arr_.data(), num_bits_, f);
+  template<typename P>
+  inline void UpdateFull(P p) {
+    Bitmap::UpdateFull(arr_.data(), num_bits_, p);
+  }
+
+  template<typename P>
+  inline void SafeUpdate(P p) {
+    auto sel = Selectivity();
+    if (sel < 0.2) {
+      Update(p);
+    } else {
+      UpdateFull(p);
+    }
   }
 
   /**
@@ -188,6 +208,9 @@ class Bitmap {
 
   static uint64_t SetAndReturnNext(uint64_t*b, uint64_t num_bits);
 
+  static uint64_t ComputeNumWords(uint64_t s) {
+    return (s + BITS_PER_WORD - 1) / BITS_PER_WORD;
+  }
  private:
   static constexpr uint64_t BITS_PER_WORD = 64;
   static constexpr uint64_t ONES = ~static_cast<uint64_t>(0);
@@ -199,10 +222,6 @@ class Bitmap {
 
   static uint64_t BitIdx(uint64_t i) {
     return i % BITS_PER_WORD;
-  }
-
-  static uint64_t ComputeNumWords(uint64_t s) {
-    return (s + BITS_PER_WORD - 1) / BITS_PER_WORD;
   }
 
   std::vector<uint64_t> arr_;

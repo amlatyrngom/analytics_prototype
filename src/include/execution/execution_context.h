@@ -1,5 +1,5 @@
 #pragma once
-#include "common/util.h"
+#include "common/types.h"
 #include <unordered_map>
 
 namespace smartid {

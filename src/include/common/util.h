@@ -1,8 +1,12 @@
 #pragma once
-#include "common/types.h"
 #include <system_info.h>
 #include <immintrin.h>
 #include <cstring>
+#include <type_traits>
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <sstream>
 
 namespace smartid {
 

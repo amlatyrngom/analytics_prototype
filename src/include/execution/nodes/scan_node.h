@@ -1,43 +1,31 @@
 #pragma once
-#include "execution/execution_common.h"
-#include "common/catalog.h"
-#include "expr_node.h"
 #include "execution/nodes/plan_node.h"
 
 namespace smartid {
+class Table;
+class ExprNode;
+
 class ScanNode : public PlanNode {
  public:
   ScanNode(Table* table,
+                     std::vector<uint64_t>&& cols_to_read,
                      std::vector<ExprNode *> &&projections,
-                     std::vector<ExprNode *> &&filters, bool record_rows)
-      : PlanNode(PlanType::Scan, {})
-      , table_(table)
-      , projections_(std::move(projections))
-      , filters_(std::move(filters))
-      , record_rows_(record_rows) {}
+                     std::vector<ExprNode *> &&filters);
 
 
-  void ResetEmbeddingFilter() {
-    embedding_filters_.clear();
+  [[nodiscard]] const auto& GetColsToRead() const{
+    return cols_to_read_;
   }
 
-  void AddEmbeddingFilters(std::vector<ExprNode*>&& embedding_filters) {
-    embedding_filters_.insert(embedding_filters_.end(), embedding_filters.begin(), embedding_filters.end());
-  }
-
-  [[nodiscard]] const std::vector<ExprNode*>& GetFilters() const{
+  [[nodiscard]] const auto& GetFilters() const{
     return filters_;
   }
 
-  [[nodiscard]] const std::vector<ExprNode*>& GetEmbeddingFilters() const{
-    return embedding_filters_;
-  }
-
-  [[nodiscard]] const std::vector<ExprNode*>& GetProjections() const{
+  [[nodiscard]] const auto& GetProjections() const{
     return projections_;
   }
 
-  [[nodiscard]] const Table* GetTable() const {
+  [[nodiscard]] const auto* GetTable() const {
     return table_;
   }
 
@@ -45,26 +33,11 @@ class ScanNode : public PlanNode {
     return table_;
   }
 
-  [[nodiscard]] bool RecordRows() const {
-    return record_rows_;
-  }
-
-
-  void ReportStats(double scan_time) {
-    scan_times_.emplace_back(scan_time);
-  }
-
-  const auto& GetStats() {
-    return scan_times_;
-  }
-
  private:
   Table* table_;
+  std::vector<uint64_t> cols_to_read_;
   std::vector<ExprNode *> projections_;
   std::vector<ExprNode *> filters_;
-  bool record_rows_;
-  std::vector<ExprNode *> embedding_filters_;
-  std::vector<double> scan_times_;
 };
 
 }

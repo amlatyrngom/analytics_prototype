@@ -1,9 +1,12 @@
 [submodule "third_party/ordered-map"]
 	path = third_party/ordered-map
 	url = https://github.com/Tessil/ordered-map.git
-[submodule "third_party/sqlite_modern_cpp"]
-	path = third_party/sqlite_modern_cpp
-	url = https://github.com/SqliteModernCpp/sqlite_modern_cpp.git
 [submodule "third_party/lrucache11"]
 	path = third_party/lrucache11
 	url = https://github.com/mohaps/lrucache11.git
+[submodule "third_party/SQLiteCpp"]
+	path = third_party/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git
+[submodule "third_party/tomlplusplus"]
+	path = third_party/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git
