@@ -3,7 +3,7 @@ sudo apt-add-repository https://cli.github.com/packages
 sudo apt update
 sudo apt install gh
 
-sudo apt install -y clang-11 openssl zip unzip build-essential
+sudo apt install -y clang-11 openssl-dev zip unzip build-essential
 wget https://github.com/Kitware/CMake/releases/download/v3.21.0-rc1/cmake-3.21.0-rc1.tar.gz
 tar -xvf cmake-3.21.0-rc1.tar.gz
 cd cmake-3.21.0-rc1/
