@@ -1,4 +1,8 @@
 #include "execution/vector_ops.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "storage/filter.h"
+
 
 namespace smartid {
 ///////////////////////////////////////////////
@@ -85,10 +89,10 @@ void VectorOps::MultiSortVector(std::vector<char *> *sort_vector,
 ////////////////////////
 /// Heap Insertion
 ///////////////////////////
-void VectorOps::HeapInsertVector(const Filter *filter,
+void VectorOps::HeapInsertVector(const Bitmap *filter,
                                  uint64_t limit,
                                  char **entries,
-                                 std::vector<char *> sort_vector,
+                                 std::vector<char *>& sort_vector,
                                  const std::vector<std::pair<uint64_t, SortType>> &sort_keys,
                                  const std::vector<SqlType> &val_types,
                                  const std::vector<uint64_t> &val_offsets) {

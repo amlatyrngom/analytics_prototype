@@ -79,7 +79,7 @@ class BufferManager {
   // Update DB
   void InsertBlockInfo(BlockInfo* block_info);
   void UpdateBlockInfo(BlockInfo* block_info);
-  void DeleteBlockInfo(BlockInfo* block_info);
+  void DeleteBlockInfo(int64_t block_id);
 
 
   // Assumes lock is held.
@@ -95,7 +95,7 @@ class BufferManager {
   void FetchBlock(BlockInfo* block_info);
 
   // Permanently delete block on disk and cloud.
-  void PermanentDeleteBlock(BlockInfo* block_info);
+  void PermanentDeleteBlock(int64_t block_id);
 
 
 

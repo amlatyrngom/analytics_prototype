@@ -35,6 +35,11 @@ namespace {
 template<typename T>
 static void TemplatedPrintElem(const Vector *vec, uint64_t row) {
   T elem = vec->DataAs<T>()[row];
+  bool non_null = Bitmap::IsSet(vec->NullBitmap()->Words(), row);
+  if (!non_null) {
+    std::cout << "NULL";
+    return;
+  }
   if constexpr (std::is_same_v<T, Varlen>) {
     std::string attr(elem.Data(), elem.Info().NormalSize());
     std::cout << attr;
@@ -59,6 +64,18 @@ void PrintVectorElem(const Vector *vec, uint64_t row) {
 
 const VectorProjection *PrintExecutor::Next() {
   auto child = Child(0);
+  if (!node_->ColNames().empty()) {
+    uint64_t output_idx = 0;
+    for (const auto& col_name: node_->ColNames()) {
+      std::cout << col_name;
+      if (output_idx < node_->ColNames().size() - 1) {
+        std::cout << ", ";
+      } else {
+        std::cout << std::endl;
+      }
+      output_idx++;
+    }
+  }
   const VectorProjection *vp;
   while ((vp = child->Next())) {
     auto num_cols = vp->NumCols();

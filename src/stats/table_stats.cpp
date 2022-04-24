@@ -4,16 +4,7 @@
 namespace smartid {
 
 namespace {
-// TODO(Amadou): Place in some utility file.
-template<typename RowReader>
-void ReadRows(PlanExecutor *executor, RowReader reader) {
-  const VectorProjection *vp;
-  while ((vp = executor->Next())) {
-    vp->GetFilter()->Map([&](sel_t i) {
-      reader(vp, i);
-    });
-  }
-}
+
 
 /**
  * Templated collection of min, max and count.

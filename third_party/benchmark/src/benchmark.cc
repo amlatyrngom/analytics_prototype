@@ -46,7 +46,7 @@
 #include "log.h"
 #include "mutex.h"
 #include "re.h"
-#include "statistics.h"
+#include "table_statistics.h"
 #include "string_util.h"
 #include "thread_manager.h"
 #include "thread_timer.h"

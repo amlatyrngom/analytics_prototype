@@ -13,14 +13,14 @@ ScanExecutor::ScanExecutor(ScanNode *scan_node,
     , filters_(std::move(filters))
     , projections_(std::move(projections)) {
   filter_ = std::make_unique<Bitmap>();
-  ti_ = std::make_unique<TableIterator>(scan_node->GetTable(), scan_node->GetTable()->BM(), scan_node->GetColsToRead());
+  ti_ = std::make_unique<TableIterator>(scan_node_->GetTable(), scan_node_->GetTable()->BM(), scan_node_->GetColsToRead());
   result_ = std::make_unique<VectorProjection>(filter_.get());
   table_vp_ = std::make_unique<VectorProjection>(ti_.get());
 }
 
+
 const VectorProjection * ScanExecutor::Next() {
   if (!ti_->Advance()) return nullptr;
-  auto start = std::chrono::high_resolution_clock::now();
   filter_->SetFrom(table_vp_->GetFilter());
   for (auto &filter_expr: filters_) {
     filter_expr->Evaluate(table_vp_.get(), filter_.get());

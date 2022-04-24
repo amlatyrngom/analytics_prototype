@@ -42,9 +42,13 @@ class NoopOutputExecutor: public PlanExecutor {
 
 class PrintExecutor: public PlanExecutor {
  public:
-  explicit PrintExecutor(std::vector<std::unique_ptr<PlanExecutor>> && children) : PlanExecutor(std::move(children)) {}
+  explicit PrintExecutor(PrintNode* node, std::vector<std::unique_ptr<PlanExecutor>> && children)
+  : PlanExecutor(std::move(children)), node_(node) {}
 
   const VectorProjection * Next() override;
+
+ private:
+  PrintNode* node_;
 };
 
 }

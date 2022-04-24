@@ -1,0 +1,40 @@
+[queries]
+[queries.join2]
+type="join"
+count=false
+
+[queries.join2.scan1]
+type="scan"
+table="central_table"
+inputs=["int64_col"] # Only read and project join keys if wanted in the output
+projections=["int64_col"]
+[[queries.join2.scan1.filters]]
+col="int64_col"
+expr = "le"
+left_closed=true
+right_closed=true
+val = "128"
+
+
+[queries.join2.scan2]
+type="scan"
+table="dimension_table1"
+inputs=["fk", "int32_col"]
+projections=["fk", "int32_col"]
+
+[queries.join2.scan3]
+type="scan"
+table="dimension_table2"
+inputs=["text_col"]
+projections=["text_col"]
+
+[queries.join2.scan5]
+type="scan"
+table="dimension_table4"
+inputs=["char_col"]
+projections=["char_col"]
+
+# [[queries.join2.scan5.filters]]
+# col="char_col"
+# expr = "eq"
+# val = "97"

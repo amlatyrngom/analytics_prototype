@@ -3,21 +3,20 @@
 #include "execution/executors/expr_executor.h"
 
 namespace smartid {
+class VectorProjection;
+class Bitmap;
+
+
 class ProjectionExecutor: public PlanExecutor {
  public:
-  ProjectionExecutor(ProjectionNode* projection_node, std::vector<std::unique_ptr<ExprExecutor>>&& projections, std::vector<std::unique_ptr<PlanExecutor>> && children)
-  : PlanExecutor(std::move(children))
-  , projection_node_(projection_node)
-  , projections_(std::move(projections)) {
-    result_ = std::make_unique<VectorProjection>(&result_filter_);
-  }
+  ProjectionExecutor(ProjectionNode* projection_node, std::vector<std::unique_ptr<ExprExecutor>>&& projections, std::vector<std::unique_ptr<ExprExecutor>>&& filters, std::vector<std::unique_ptr<PlanExecutor>> && children);
 
   const VectorProjection * Next() override;
  private:
   ProjectionNode* projection_node_;
   std::vector<std::unique_ptr<ExprExecutor>> projections_;
-  std::vector<std::unique_ptr<Vector>> result_vecs_{};
+  std::vector<std::unique_ptr<ExprExecutor>> filters_;
   bool init_{false};
-  Filter result_filter_;
+  std::unique_ptr<Bitmap> result_filter_;
 };
 }

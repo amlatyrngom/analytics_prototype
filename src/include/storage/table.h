@@ -14,6 +14,7 @@ class Vector;
 class BufferManager;
 class InfoStore;
 class DictEncoding;
+class TableStatistics;
 
 
 /**
@@ -24,9 +25,10 @@ class Table {
   /**
    * Create a new table or restores it from db is schema is empty.
    */
-  Table(int64_t table_id, std::string name, Schema &&schema, BufferManager* buffer_manager, InfoStore* info_store);
+  Table(int64_t table_id, std::string name, Schema &&schema, BufferManager* buffer_manager, InfoStore* info_store, bool add_row_id=true);
 
   void InsertTableBlock(std::unique_ptr<TableBlock> && table_block);
+  void ClearBlocks();
 
   ~Table();
 
@@ -77,9 +79,13 @@ class Table {
 
   void FinalizeEncodings();
 
+  void SetStatistics(std::unique_ptr<TableStatistics>&& table_stats);
+  [[nodiscard]] const TableStatistics* GetStatistics() const;
+
  private:
   void StoreCreateTableInfo();
   void StoreBlockInfo(int64_t block_id);
+  void DeleteBlockInfo(int64_t block_id);
   void RestoreFromDB();
   void RestoreSchema();
   void RestoreBlocks();
@@ -95,6 +101,7 @@ class Table {
   // In mem
   BufferManager* buffer_manager_{nullptr};
   InfoStore* info_store_{nullptr};
+  std::unique_ptr<TableStatistics> table_statistics_;
   std::shared_mutex table_lock_;
   std::mutex table_modif_lock_; // TODO: Support concurrency.
 };

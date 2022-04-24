@@ -132,4 +132,151 @@ SqlType TypeUtil::Promote(SqlType t1, SqlType t2) {
   return SqlType::Int32;
 }
 
+Value ValueUtil::ReadVal(const std::string &s, SqlType val_type) {
+  std::stringstream ss;
+  ss << s;
+  return ReadVal(ss, val_type);
+}
+
+Value ValueUtil::ReadVal(std::istream& is, SqlType val_type) {
+  Value val;
+  switch (val_type) {
+    case SqlType::Char: {
+      int raw_val; // uint8_t and int8_t behave weirdly with IO.
+      is >> raw_val;
+      val = uint8_t(raw_val);
+      break;
+    }
+    case SqlType::Int8: {
+      int raw_val; // uint8_t and int8_t behave weirdly with IO.
+      is >> raw_val;
+      val = int8_t(raw_val);
+      break;
+    }
+    case SqlType::Int16: {
+      int16_t raw_val;
+      is >> raw_val;
+      val = raw_val;
+      break;
+    }
+    case SqlType::Int32: {
+      int32_t raw_val;
+      is >> raw_val;
+      val = raw_val;
+      break;
+    }
+    case SqlType::Int64: {
+      int64_t raw_val;
+      is >> raw_val;
+      val = raw_val;
+      break;
+    }
+    case SqlType::Float32: {
+      float raw_val;
+      is >> raw_val;
+      val = raw_val;
+      break;
+    }
+    case SqlType::Float64: {
+      double raw_val;
+      is >> raw_val;
+      val = raw_val;
+      break;
+    }
+    case SqlType::Date: {
+      std::string raw_val;
+      is >> raw_val;
+      val = Date::FromString(raw_val);
+      break;
+    }
+    default: {
+      ASSERT(false, "Unsupported value type!");
+    }
+  }
+  return val;
+}
+
+void ValueUtil::WriteVal(const Value& val, std::ostream& os, SqlType val_type) {
+  switch (val_type) {
+    case SqlType::Char: {
+      os << int(std::get<uint8_t>(val));
+      return;
+    }
+    case SqlType::Int8: {
+      os << int(std::get<int8_t>(val));
+      return;
+    }
+    case SqlType::Int16: {
+      os << std::get<int16_t>(val);
+      return;
+    }
+    case SqlType::Int32: {
+      os << std::get<int32_t>(val);
+      return;
+    }
+    case SqlType::Int64: {
+      os << std::get<int64_t>(val);
+      return;
+    }
+    case SqlType::Float32: {
+      os << std::get<float>(val);
+      return;
+    }
+    case SqlType::Float64: {
+      os << std::get<double>(val);
+      return;
+    }
+    case SqlType::Date: {
+      os << std::get<Date>(val).ToString();
+      return;
+    }
+    default: {
+      ASSERT(false, "Unsupported value type!");
+    }
+  }
+}
+
+Value ValueUtil::Add(const Value& val, int x, SqlType val_type) {
+  switch (val_type) {
+    case SqlType::Char: {
+      auto v = int(std::get<uint8_t>(val));
+      v += x;
+      return uint8_t(v);
+    }
+    case SqlType::Int8: {
+      auto v = int(std::get<int8_t>(val));
+      v += x;
+      return int8_t(v);
+    }
+    case SqlType::Int16: {
+      auto v = int(std::get<int16_t>(val));
+      v += x;
+      return int16_t(v);
+    }
+    case SqlType::Int32: {
+      auto v = std::get<int32_t>(val);
+      v += x;
+      return int32_t(v);
+    }
+    case SqlType::Int64: {
+      auto v = std::get<int64_t>(val);
+      v += x;
+      return int64_t(v);
+    }
+    case SqlType::Float32: {
+      auto v = std::get<float>(val);
+      v += float(x);
+      return float(v);
+    }
+    case SqlType::Float64: {
+      auto v = std::get<double>(val);
+      v += double(x);
+      return double(v);
+    }
+    default: {
+      ASSERT(false, "Unsupported add value type!");
+    }
+  }
+}
+
 }

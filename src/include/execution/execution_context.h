@@ -7,7 +7,7 @@ class ExecutionContext {
  public:
   ExecutionContext() = default;
 
-  void AddParam(const std::string& param_name, Value&& param_value, SqlType param_type) {
+  void AddParam(const std::string& param_name, const Value& param_value, SqlType param_type) {
     params_[param_name] = std::pair<Value, SqlType>{param_value, param_type};
   }
 

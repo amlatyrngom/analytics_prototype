@@ -57,12 +57,11 @@ struct BlockLRU {
 
 
 void BufferManager::Unpin(BlockInfo *block_info, bool dirty, bool should_delete) {
+  int64_t block_id{-1};
   {
     // Unpin block.
-    std::cout << "Before lock. Unpinning : " << block_info->block_id << std::endl;
     auto g = std::lock_guard(global_m);
-    auto block_id = block_info->block_id;
-    std::cout << "Unpinning : " << block_id << std::endl;
+    block_id = block_info->block_id;
     // Safeguards.
     ASSERT(block_info != nullptr, "Unpinning non existent block!!!");
     ASSERT(!block_info->deleted, "Unpinning deleted block!!!");
@@ -88,9 +87,9 @@ void BufferManager::Unpin(BlockInfo *block_info, bool dirty, bool should_delete)
       } else {
         // Free space. File will be permanently deleted after global lock is unlocked.
         std::free(block_info->data);
-        block_infos_.erase(block_info->block_id);
         used_mem_space_ -= block_info->size;
         used_disk_space_ -= block_info->size;
+        block_infos_.erase(block_info->block_id);
       }
     }
   }
@@ -98,8 +97,8 @@ void BufferManager::Unpin(BlockInfo *block_info, bool dirty, bool should_delete)
     // Persist block info.
     if (should_delete) {
       // No need to take local lock, since other threads do have this block.
-      DeleteBlockInfo(block_info);
-      PermanentDeleteBlock(block_info);
+      DeleteBlockInfo(block_id);
+      PermanentDeleteBlock(block_id);
     }
   }
 }
@@ -207,7 +206,7 @@ void BufferManager::RestoreFromDB() {
         block_info_uniq->deleted = bool(deleted);
         block_info_uniq->on_disk = bool(on_disk);
         db_blocks.emplace(block_id, std::move(block_info_uniq));
-        if (block_id > curr_block_id_) {
+        if (block_id >= curr_block_id_) {
           curr_block_id_ = block_id + 1;
         }
       }
@@ -319,7 +318,7 @@ void BufferManager::InsertBlockInfo(BlockInfo* block_info) {
       q.bind(2, block_info->size);
       q.bind(3, int(block_info->deleted));
       q.bind(4, int(block_info->on_disk));
-      std::cout << q.getExpandedSQL() << std::endl;
+//      std::cout << q.getExpandedSQL() << std::endl;
       q.exec();
     }
     transaction.commit();
@@ -339,7 +338,7 @@ void BufferManager::UpdateBlockInfo(BlockInfo* block_info) {
       q.bind(2, int(block_info->deleted));
       q.bind(3, int(block_info->on_disk));
       q.bind(4, block_info->block_id);
-      std::cout << q.getExpandedSQL() << std::endl;
+//      std::cout << q.getExpandedSQL() << std::endl;
       q.exec();
     }
     transaction.commit();
@@ -349,13 +348,13 @@ void BufferManager::UpdateBlockInfo(BlockInfo* block_info) {
   }
 }
 
-void BufferManager::DeleteBlockInfo(BlockInfo* block_info) {
+void BufferManager::DeleteBlockInfo(int64_t block_id) {
   try {
     auto& db = *info_store_->db;
     SQLite::Transaction transaction(*info_store_->db);
     SQLite::Statement q(db, "DELETE FROM buffer_info WHERE block_id=?;");
-    q.bind(1, block_info->block_id);
-    std::cout << q.getExpandedSQL() << std::endl;
+    q.bind(1, block_id);
+//    std::cout << q.getExpandedSQL() << std::endl;
     q.exec();
     transaction.commit();
   } catch (std::exception& e) {
@@ -369,7 +368,7 @@ void BufferManager::MakeSpace(BlockInfo* block_info, std::vector<BlockInfo*>& to
   auto setting = Settings::Instance();
   auto buffer_mem = setting->BufferMem();
   auto buffer_disk = setting->BufferDisk();
-  std::cout << "Before making space: mem=" << used_mem_space_ << "; disk=" << used_disk_space_ << std::endl;
+//  std::cout << "Before making space: mem=" << used_mem_space_ << "; disk=" << used_disk_space_ << std::endl;
   auto curr_used_mem = used_mem_space_;
   auto curr_used_disk = used_disk_space_;
   // Do evictions from memory to disk.
@@ -379,7 +378,7 @@ void BufferManager::MakeSpace(BlockInfo* block_info, std::vector<BlockInfo*>& to
     curr_used_mem -= evicted->size;
     to_disk.emplace_back(evicted);
     unpinned_in_disk_->Insert(evicted);
-    std::cout << "Marking for disk eviction: id =" << evicted->block_id << " mem=" << curr_used_mem << "; disk=" << curr_used_disk << std::endl;
+//    std::cout << "Marking for disk eviction: id =" << evicted->block_id << " mem=" << curr_used_mem << "; disk=" << curr_used_disk << std::endl;
   }
   if (!block_info->on_disk) {
     // Do evictions from disk to cloud.
@@ -389,7 +388,7 @@ void BufferManager::MakeSpace(BlockInfo* block_info, std::vector<BlockInfo*>& to
       curr_used_disk -= evicted->size;
       to_cloud.emplace_back(evicted);
       block_info->on_disk = false;
-      std::cout << "Marking for cloud eviction: id =" << evicted->block_id << " mem=" << curr_used_mem << "; disk=" << curr_used_disk << std::endl;
+//      std::cout << "Marking for cloud eviction: id =" << evicted->block_id << " mem=" << curr_used_mem << "; disk=" << curr_used_disk << std::endl;
     }
   }
   // Eviction successful.
@@ -402,7 +401,7 @@ void BufferManager::MakeSpace(BlockInfo* block_info, std::vector<BlockInfo*>& to
     // Is now in mem.
     unpinned_in_disk_->Remove(block_info->block_id);
   }
-  std::cout << "After making space: mem=" << used_mem_space_ << "; disk=" << used_disk_space_ << std::endl;
+//  std::cout << "After making space: mem=" << used_mem_space_ << "; disk=" << used_disk_space_ << std::endl;
 }
 
 // Assumes global lock is held.
@@ -461,8 +460,8 @@ void BufferManager::FetchBlock(BlockInfo *block_info) {
 }
 
 // Assumes exclusive access to block
-void BufferManager::PermanentDeleteBlock(BlockInfo *block_info) {
-  std::filesystem::remove(GetBlockFilename(block_info->block_id));
+void BufferManager::PermanentDeleteBlock(int64_t block_id) {
+  std::filesystem::remove(GetBlockFilename(block_id));
   // TODO: delete from cloud too.
 }
 

@@ -1,4 +1,5 @@
 #include "execution/executors/hash_aggr_executor.h"
+#include "execution/vector_ops.h"
 
 namespace smartid {
 const VectorProjection *HashAggregationExecutor::Next() {
@@ -6,6 +7,7 @@ const VectorProjection *HashAggregationExecutor::Next() {
   Accumulate();
   accumulated_ = true;
   IterateTable();
+  Clear();
   return result_.get();
 }
 
@@ -79,6 +81,7 @@ void HashAggregationExecutor::VectorHash(const VectorProjection *vp, const std::
 
 void HashAggregationExecutor::FindCandidates(const VectorProjection *vp) {
   auto hash_data = hashes_.DataAs<int64_t>();
+  candidates_.Resize(cand_filter_.TotalSize());
   auto cand_data = candidates_.MutableDataAs<const HTEntry *>();
   cand_filter_.SetFrom(&non_match_filter_);
   // Only select elements with a match;
@@ -191,8 +194,8 @@ void HashAggregationExecutor::Accumulate() {
 
 void HashAggregationExecutor::IterateTable() {
   uint64_t attr_idx = 0;
-  build_entries_.ShallowReset(entries_.size(), reinterpret_cast<const char *>(entries_.data()));
-  result_filter_.Reset(entries_.size(), FilterMode::BitmapFull);
+  result_filter_.Reset(entries_.size());
+  build_entries_.ShallowReset(entries_.size(), reinterpret_cast<const char *>(entries_.data()), result_filter_.Words());
   for (const auto &i: node_->GetGroupBys()) {
     auto build_offset = build_offsets_[attr_idx];
     auto build_type = build_types_[attr_idx];
@@ -208,4 +211,11 @@ void HashAggregationExecutor::IterateTable() {
     attr_idx++;
   }
 }
+
+void HashAggregationExecutor::Clear() {
+  agg_table_.clear();
+  entries_.clear();
+  build_alloc_space_.clear();
+}
+
 }

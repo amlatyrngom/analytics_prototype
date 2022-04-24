@@ -1,7 +1,5 @@
 #pragma once
 
-#include "execution/execution_common.h"
-#include "execution/vector_ops.h"
 #include "plan_node.h"
 
 namespace smartid {

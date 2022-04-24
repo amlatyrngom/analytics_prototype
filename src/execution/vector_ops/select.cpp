@@ -1,4 +1,7 @@
 #include "execution/vector_ops.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "storage/filter.h"
 
 namespace smartid {
 /////////////////////////////////////////////////

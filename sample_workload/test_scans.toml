@@ -1,0 +1,72 @@
+[queries]
+[queries.scan1]
+type="scan"
+table="central_table"
+inputs=["id1", "id2", "int64_col"]
+projections=["id1", "id2", "int64_col"]
+[[queries.scan1.filters]]
+col="int64_col"
+expr="lt"
+val="128"
+[[queries.scan1.filters]]
+col="id2"
+expr = "ge"
+val="10064"
+
+
+[queries.scan2]
+type="scan"
+table="central_table"
+inputs=["id1", "id2", "int64_col"]
+projections=["id1", "id2", "int64_col"]
+[[queries.scan2.filters]]
+col="int64_col"
+expr = "between"
+left_closed=false
+right_closed=false
+vals = ["50", "100"]
+
+
+[queries.scan3]
+type="scan"
+table="central_table"
+inputs=["id1", "id2", "int64_col"]
+projections=["id1", "id2", "int64_col"]
+[[queries.scan3.filters]]
+col="int64_col"
+expr = "in"
+vals=["12", "50", "112"]
+
+[queries.scan4]
+type="scan"
+table="central_table"
+inputs=["id1", "id2", "int64_col"]
+projections=["id1", "id2", "int64_col"]
+[[queries.scan4.filters]]
+col="int64_col"
+expr = "in"
+num_ins = 4
+
+
+[queries.scan5]
+type="scan"
+table="central_table"
+inputs=["id1", "id2", "int64_col"]
+projections=["id1", "id2", "int64_col"]
+[[queries.scan5.filters]]
+col="int64_col"
+expr = "eq"
+val = "1"
+
+
+[queries.scan6]
+type="scan"
+table="central_table"
+inputs=["id1", "id2", "int64_col"]
+projections=["id1", "id2", "int64_col"] # For joins, no need to manually project join keys unless wanted in outputs.
+[[queries.scan6.filters]]
+col="int64_col"
+expr = "between"
+left_closed=false
+right_closed=true
+range=100

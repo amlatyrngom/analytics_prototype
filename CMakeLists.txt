@@ -11,12 +11,13 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 # Sources Files
-# TODO: Uncomment when execution engine fixed!
+# TODO: Uncomment when execution engine fully fixed!
 #file(GLOB_RECURSE SMART_ID_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/include/*.h)
-
 file(GLOB_RECURSE COMMON_SOURCES ${PROJECT_SOURCE_DIR}/src/common/*.cpp ${PROJECT_SOURCE_DIR}/src/include/common/*.h)
 file(GLOB_RECURSE STORAGE_SOURCES ${PROJECT_SOURCE_DIR}/src/storage/*.cpp  ${PROJECT_SOURCE_DIR}/src/include/storage/*.h )
 file(GLOB_RECURSE OPTIMIZER_SOURCES ${PROJECT_SOURCE_DIR}/src/optimizer/*.cpp  ${PROJECT_SOURCE_DIR}/src/include/optimizer/*.h )
+# TODO: Remove out when execution engine fully fixed!
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/execution_types.h)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/expr_node.h)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/plan_node.h)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/scan_node.h)
@@ -29,7 +30,35 @@ list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/nodes/scan_nod
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/expr.cpp)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/binary_comp.cpp)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/init.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/reduce.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/hashing.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/gather.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/scatter.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/sort.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/select.cpp)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/execution_factory.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/static_aggregation.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/static_aggr_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/static_aggr_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/hash_aggr_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/hash_aggr_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/hash_aggr_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/sort_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/sort_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/sort_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/hash_join_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/hash_join_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/hash_join_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/projection_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/projection_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/projection_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/rowid_index_join_node.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/rowid_index_join_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/rowid_index_join_executor.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/read_block.cpp)
+
+
+
 list(APPEND SMART_ID_SOURCES ${COMMON_SOURCES} ${STORAGE_SOURCES} ${OPTIMIZER_SOURCES} ${EXECUTION_SOURCES})
 
 file(GLOB_RECURSE SMART_ID_TEST_SOURCES ${PROJECT_SOURCE_DIR}/test/test_util/*.cpp ${PROJECT_SOURCE_DIR}/test/test_util/*.h)
@@ -86,6 +115,11 @@ list(APPEND THIRD_PARTY_LIBS sqlite3 SQLiteCpp)
 
 # Toml
 include_directories(SYSTEM third_party/tomlplusplus/include)
+
+# FMT
+include_directories(SYSTEM third_party/fmt/include)
+add_subdirectory(third_party/fmt)
+list(APPEND THIRD_PARTY_LIBS fmt)
 
 if( APPLE )
     set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@3)

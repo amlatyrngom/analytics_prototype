@@ -4,25 +4,29 @@
 #include "common/catalog.h"
 #include "common/info_store.h"
 #include "storage/dict_encoding.h"
+#include "optimizer/table_statistics.h"
 
 namespace smartid {
 
-Table::Table(int64_t table_id, std::string name, Schema&& schema, BufferManager* buffer_manager, InfoStore* info_store)
+Table::Table(int64_t table_id, std::string name, Schema&& schema, BufferManager* buffer_manager, InfoStore* info_store, bool add_row_id)
 : table_id_(table_id)
 , name_(std::move(name))
 , schema_(std::move(schema))
 , buffer_manager_(buffer_manager)
-, info_store_(info_store) {
+, info_store_(info_store)
+, table_statistics_(nullptr) {
   // Check if already
   bool restore = schema_.NumCols() == 0;
-  bool add_row_id = true;
-  for (uint64_t col_idx = 0; col_idx < schema_.NumCols(); col_idx++) {
-    if (schema_.GetColumn(col_idx).Name() == "row_id") {
-      add_row_id = false;
-      id_idx_= col_idx;
-      break;
+  if (add_row_id) {
+    for (uint64_t col_idx = 0; col_idx < schema_.NumCols(); col_idx++) {
+      if (schema_.GetColumn(col_idx).Name() == "row_id") {
+        add_row_id = false;
+        id_idx_= col_idx;
+        break;
+      }
     }
   }
+
 
   if (restore) {
     // Restore from DB.
@@ -69,10 +73,28 @@ void Table::InsertTableBlock(std::unique_ptr<TableBlock> &&table_block) {
   block_ids_.emplace_back(block_id);
 }
 
+void Table::ClearBlocks() {
+  for (const auto& block_id: block_ids_) {
+    if (buffer_manager_->GetInfo(block_id) == nullptr) continue;
+    auto block_info = buffer_manager_->Pin(block_id);
+    buffer_manager_->Unpin(block_info, false, true);
+    DeleteBlockInfo(block_id);
+  }
+  block_ids_.clear();
+}
+
 void Table::FinalizeEncodings() {
   for (auto& [col_idx, dict_encoding]: dict_encodings_) {
     dict_encoding->Finalize(this);
   }
+}
+
+void Table::SetStatistics(std::unique_ptr<TableStatistics>&& table_stats) {
+  table_statistics_ = std::move(table_stats);
+}
+
+const TableStatistics *Table::GetStatistics() const {
+  return table_statistics_.get();
 }
 
 
@@ -95,16 +117,20 @@ bool BlockIterator::Advance() {
 
   while (curr_idx_ < block_size && !any_present) {
     auto presence_data = raw_block->PresenceBitmap() + (curr_idx_ / Settings::BITMAP_BITS_PER_WORD);
-    presence_->Reset(block_size, presence_data);
-    auto num_ones = Bitmap::NumOnes(presence_->Words(), vec_size);
+    presence_->Reset(vec_size, presence_data);
+    auto num_ones = presence_->NumOnes();
     any_present = num_ones > 0;
     if (any_present) {
-      // TODO: Avoid deep copy.
+      // TODO: Avoid deep copy for varchars. Requires IsCompact checks elsewhere.
       for (uint64_t i = 0; i < cols_to_read_.size(); i++) {
         auto col_idx = cols_to_read_[i];
         auto null_bitmap = raw_block->BitmapData(col_idx) + (curr_idx_ / Settings::BITMAP_BITS_PER_WORD);
         auto read_data = raw_block->ColData(col_idx) + curr_idx_ * vecs_[i]->ElemSize();
-        vecs_[i]->Reset(vec_size, read_data, null_bitmap, raw_block);
+        if (vecs_[i]->ElemType() == SqlType::Varchar) {
+          vecs_[i]->Reset(vec_size, read_data, null_bitmap, raw_block);
+        } else {
+          vecs_[i]->ShallowReset(vec_size, read_data, null_bitmap);
+        }
       }
     }
     curr_idx_ += vec_size;
@@ -170,13 +196,17 @@ void Table::StoreCreateTableInfo() {
       q.exec();
     }
     {
-      SQLite::Statement q(db, "INSERT INTO table_schemas (table_id, col_name, col_idx, col_type) VALUES (?, ?, ?, ?)");
+      SQLite::Statement q(db, "INSERT INTO table_schemas (table_id, col_name, col_idx, col_type, is_pk, is_fk, fk_name, encoded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
       for (uint64_t i = 0; i < schema_.NumCols(); i++) {
         auto & col = schema_.GetColumn(i);
         q.bind(1, table_id_);
         q.bind(2, col.Name());
         q.bind(3, static_cast<int32_t>(i));
         q.bind(4, TypeUtil::TypeToName(col.Type()));
+        q.bind(5, col.IsPK());
+        q.bind(6, col.IsFK());
+        q.bind(7, col.FKName());
+        q.bind(8, col.DictEncode());
         std::cout << q.getExpandedSQL() << std::endl;
         q.exec();
         q.reset();
@@ -207,14 +237,33 @@ void Table::StoreBlockInfo(int64_t block_id) {
   }
 }
 
+void Table::DeleteBlockInfo(int64_t block_id) {
+  try {
+    auto& db = *info_store_->db;
+    SQLite::Transaction transaction(*info_store_->db);
+    {
+      SQLite::Statement q(db, "DELETE FROM table_blocks WHERE table_id=? AND block_id=?");
+      q.bind(1, table_id_);
+      q.bind(2, block_id);
+      std::cout << q.getExpandedSQL() << std::endl;
+      q.exec();
+    }
+    transaction.commit();
+  } catch (std::exception& e) {
+    std::cout << e.what() << std::endl;
+    throw e;
+  }
+}
+
 void Table::RestoreSchema() {
   std::vector<std::pair<uint64_t, Column>> unordered_cols;
   try {
     auto& db = *info_store_->db;
     SQLite::Transaction transaction(*info_store_->db);
     {
-      SQLite::Statement q(db, "SELECT col_name, col_idx, col_type FROM table_schemas WHERE table_id=?");
+      SQLite::Statement q(db, "SELECT col_name, col_idx, col_type, is_pk, is_fk, fk_name, encoded FROM table_schemas WHERE table_id=?");
       q.bind(1, table_id_);
+      std::cout << q.getExpandedSQL() << std::endl;
       while (q.executeStep()) {
         const char* name = q.getColumn(0);
         int col_idx = q.getColumn(1);
@@ -222,8 +271,12 @@ void Table::RestoreSchema() {
         if (name == std::string("row_id")) {
           id_idx_ = col_idx;
         }
+        int is_pk = q.getColumn(3);
+        int is_fk = q.getColumn(4);
+        const char* fk_name = q.getColumn(5);
+        int encoded = q.getColumn(6);
         SqlType sql_type = TypeUtil::NameToType(type_name);
-        unordered_cols.emplace_back(col_idx, Column(name, sql_type));
+        unordered_cols.emplace_back(col_idx, Column(name, sql_type, bool(is_pk), bool(is_fk), fk_name, bool(encoded)));
       }
     }
     transaction.commit();
@@ -245,10 +298,10 @@ void Table::RestoreBlocks() {
     {
       SQLite::Statement q(db, "SELECT block_id FROM table_blocks WHERE table_id=?");
       q.bind(1, table_id_);
+      std::cout << q.getExpandedSQL() << std::endl;
       while (q.executeStep()) {
         int64_t block_id = q.getColumn(0);
         if (buffer_manager_->GetInfo(block_id) != nullptr) {
-          std::cout << "Table restoring block: " << block_id << std::endl;
           block_ids_.emplace_back(block_id);
         }
       }

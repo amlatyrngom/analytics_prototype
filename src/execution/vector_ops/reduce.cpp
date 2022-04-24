@@ -1,4 +1,8 @@
 #include "execution/vector_ops.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "storage/filter.h"
+
 
 namespace smartid {
 
@@ -59,18 +63,34 @@ struct Max {
 };
 
 template<typename Op, typename in_cpp_type, typename out_cpp_type>
-void TemplatedReduce(const Filter *filter, const Vector *in, Vector *out) {
+void TemplatedReduce(const Bitmap *filter, const Vector *in, Vector *out) {
   auto in_data = in->DataAs<in_cpp_type>();
+  auto in_null_bitmap = in->NullBitmap();
+  std::vector<uint64_t> active_vals(filter->NumWords());
+  Bitmap::Intersect(in_null_bitmap->Words(), filter->Words(), filter->TotalSize(), active_vals.data());
+  auto out_non_null = Bitmap::IsSet(out->NullBitmap()->Words(), 0);
   auto out_val = out->DataAs<out_cpp_type>()[0];
-  auto fn = [&](sel_t i) {
-    out_val = Op::Apply(in_data[i], out_val);
-  };
-  filter->Map(fn);
+  if (out_non_null) {
+    auto fn = [&](sel_t i) {
+      out_val = Op::Apply(in_data[i], out_val);
+    };
+    Bitmap::Map(active_vals.data(), filter->TotalSize(), fn);
+  } else {
+    auto fn = [&](sel_t i) {
+      if (out_non_null) {
+        out_non_null = true;
+        out_val = Op::Init(in_data[i]);
+      } else {
+        out_val = Op::Apply(in_data[i], out_val);
+      }
+    };
+    Bitmap::Map(active_vals.data(), filter->TotalSize(), fn);
+  }
   out->MutableDataAs<out_cpp_type>()[0] = out_val;
 }
 
 template<typename in_cpp_type>
-void TemplatedReduceByIn(const Filter *filter, const Vector *in, Vector *out, AggType agg_type) {
+void TemplatedReduceByIn(const Bitmap *filter, const Vector *in, Vector *out, AggType agg_type) {
   switch (agg_type) {
     case AggType::COUNT:TemplatedReduce<Count<in_cpp_type>, in_cpp_type, int64_t>(filter, in, out);
       return;
@@ -94,31 +114,31 @@ void TemplatedReduceByIn(const Filter *filter, const Vector *in, Vector *out, Ag
           return;\
 
 
-void VectorOps::ReduceVector(const Filter *filter, const Vector *in, Vector *out, AggType agg_type) {
+void VectorOps::ReduceVector(const Bitmap *filter, const Vector *in, Vector *out, AggType agg_type) {
   switch (in->ElemType()) {
     SQL_TYPE(TEMPLATED_REDUCE_BY_IN, TEMPLATED_REDUCE_BY_IN)
   }
 }
 
-/////////////////////////////////////////
-//// Scatter Reduce
-////////////////////////////////////////
+///////////////////////////////////////////
+////// Scatter Reduce
+//////////////////////////////////////////
 template<typename Op, typename in_cpp_type, typename out_cpp_type>
-void TemplatedScatterReduce(const Filter *filter, const Vector *in, Vector *out, uint64_t agg_offset) {
+void TemplatedScatterReduce(const Bitmap *filter, const Vector *in, Vector *out, uint64_t agg_offset) {
   out->Resize(in->NumElems());
   auto in_data = in->DataAs<in_cpp_type>();
   auto out_data = out->MutableDataAs<char *>();
   auto scatter_fn = [&](sel_t i) {
     auto curr_val = reinterpret_cast<out_cpp_type *>(out_data[i] + agg_offset);
-    if constexpr (std::is_same_v<float, out_cpp_type>) std::cout << "CurrVal: " << *curr_val << ", " << in_data[i] << std::endl;
+//    if constexpr (std::is_same_v<float, out_cpp_type>) std::cout << "CurrVal: " << *curr_val << ", " << in_data[i] << std::endl;
     *curr_val = Op::Apply(in_data[i], *curr_val);
-    if constexpr (std::is_same_v<float, out_cpp_type>) std::cout << "CurrVal: " << *curr_val << std::endl;
+//    if constexpr (std::is_same_v<float, out_cpp_type>) std::cout << "CurrVal: " << *curr_val << std::endl;
   };
   filter->Map(scatter_fn);
 }
 
 template<typename in_cpp_type>
-void TemplatedScatterReduceByIn(const Filter *filter,
+void TemplatedScatterReduceByIn(const Bitmap *filter,
                                 const Vector *in,
                                 Vector *out,
                                 uint64_t agg_offset,
@@ -134,7 +154,7 @@ void TemplatedScatterReduceByIn(const Filter *filter,
       if constexpr (std::is_arithmetic_v<in_cpp_type>) {
         TemplatedScatterReduce<Sum<in_cpp_type>, in_cpp_type, double>(filter, in, out, agg_offset);
       } else {
-        std::cerr << "Sum can only be called on arithmetic types!!!" << std::endl;
+        ASSERT(false, "Sum can only be called on arithmetic types!!!");
       }
       return;
   }
@@ -146,28 +166,29 @@ void TemplatedScatterReduceByIn(const Filter *filter,
           return;\
 
 
-void VectorOps::ScatterReduceVector(const Filter *filter,
+void VectorOps::ScatterReduceVector(const Bitmap *filter,
                                     const Vector *in,
                                     Vector *out,
                                     uint64_t agg_offset,
                                     AggType agg_type) {
+  // TODO: Support nulls.
   switch (in->ElemType()) {
     SQL_TYPE(TEMPLATED_SCATTER_REDUCE_BY_IN, TEMPLATED_SCATTER_REDUCE_BY_IN)
   }
 }
 
-//////////////////////////////////
-//// Init Reduce
-//////////////////////////////////
+////////////////////////////////////
+////// Init Reduce
+////////////////////////////////////
 template<typename Op, typename in_cpp_type, typename out_cpp_type>
-void TemplatedScatterInitReduce(const Vector *in, sel_t i, char *out, uint64_t agg_offset) {
+void TemplatedScatterInitReduce(const Vector *in, uint64_t i, char *out, uint64_t agg_offset) {
   auto in_data = in->DataAs<in_cpp_type>();
   auto curr_val = reinterpret_cast<out_cpp_type *>(out + agg_offset);
   *curr_val = Op::Init(in_data[i]);
 }
 
 template<typename in_cpp_type>
-void TemplatedScatterInitReduceByIn(const Vector *in, sel_t i, char *out, uint64_t agg_offset, AggType agg_type) {
+void TemplatedScatterInitReduceByIn(const Vector *in, uint64_t i, char *out, uint64_t agg_offset, AggType agg_type) {
   switch (agg_type) {
     case AggType::COUNT:TemplatedScatterInitReduce<Count<in_cpp_type>, in_cpp_type, int64_t>(in, i, out, agg_offset);
       return;
@@ -191,7 +212,7 @@ void TemplatedScatterInitReduceByIn(const Vector *in, sel_t i, char *out, uint64
           return;\
 
 
-void VectorOps::ScatterInitReduceScalar(const Vector *in, sel_t i, char *out, uint64_t agg_offset, AggType agg_type) {
+void VectorOps::ScatterInitReduceScalar(const Vector *in, uint64_t i, char *out, uint64_t agg_offset, AggType agg_type) {
   switch (in->ElemType()) {
     SQL_TYPE(TEMPLATED_SCATTER_INIT_REDUCE_BY_IN, TEMPLATED_SCATTER_INIT_REDUCE_BY_IN)
   }

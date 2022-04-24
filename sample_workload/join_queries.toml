@@ -1,0 +1,31 @@
+[queries]
+[queries.join1]
+type="join"
+count=false
+[queries.join1.scan1]
+type="scan"
+table="central_table"
+inputs=["int64_col"]
+projections=["int64_col"] # Only read and project join keys if wanted in the output
+[[queries.join1.scan1.filters]]
+col="int64_col"
+expr = "between"
+left_closed=true
+right_closed=true
+vals = ["50", "100"]
+
+
+[queries.join1.scan2]
+type="scan"
+table="dimension_table1"
+inputs=["int32_col"]
+projections=["id", "fk", "int16_col", "int32_col"]
+[[queries.join1.scan2.filters]]
+col="int16_col"
+op="ge"
+vals=["?"]
+[[queries.join1.scan2.filters]]
+col="int32_col"
+op="between"
+vals=["5", "8"]
+

@@ -1,22 +1,10 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include <string>
+#include "execution/execution_types.h"
 
 namespace smartid {
-
-enum class PlanType {
-  Noop,
-  Print,
-  Scan,
-  Projection,
-  HashJoin,
-  HashAgg,
-  StaticAgg,
-  Sort,
-  Materialize,
-  BuildRowIDIndex,
-  RowIDIndexJoin,
-};
 
 class PlanNode {
  public:
@@ -53,6 +41,15 @@ class NoopOutputNode : public PlanNode {
 
 class PrintNode : public PlanNode {
  public:
-  explicit PrintNode(PlanNode *child) : PlanNode(PlanType::Print, {child}) {}
+  explicit PrintNode(PlanNode *child, std::vector<std::string>&& col_names)
+  : PlanNode(PlanType::Print, {child})
+  , col_names_(std::move(col_names)) {}
+
+  [[nodiscard]] const auto& ColNames() const {
+    return col_names_;
+  }
+
+ private:
+  std::vector<std::string> col_names_;
 };
 }

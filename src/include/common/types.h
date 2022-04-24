@@ -17,7 +17,7 @@ namespace smartid {
  * Supported types. (char is uint8_t to disambiguate from int8_t.)
  */
 #define SQL_TYPE(ARITH, OTHER, ...) \
-  OTHER(Char, uint8_t, __VA_ARGS__)                  \
+  ARITH(Char, uint8_t, __VA_ARGS__)                  \
   ARITH(Int8, int8_t, __VA_ARGS__)                  \
   ARITH(Int16, int16_t, __VA_ARGS__)                  \
   ARITH(Int32, int32_t, __VA_ARGS__)                  \
@@ -168,6 +168,13 @@ struct TypeUtil {
 
 // A singular value.
 using Value = std::variant<uint8_t, int8_t, int16_t, int32_t, int64_t, float, double, Date, Varlen, uintptr_t>;
+
+struct ValueUtil {
+  static Value ReadVal(std::istream& is, SqlType val_type);
+  static Value ReadVal(const std::string& s, SqlType val_type);
+  static void WriteVal(const Value& val, std::ostream& os, SqlType val_type);
+  static Value Add(const Value& val, int x, SqlType val_type);
+};
 
 struct FKConstraint {
   FKConstraint() = default;

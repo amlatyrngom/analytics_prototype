@@ -15,6 +15,12 @@ class DictEncoding {
 
   void Finalize(Table* table);
 
+  std::string GetVal(int code);
+
+  int GetCode(const std::string& val);
+
+  void ToString(std::ostream& os);
+
  private:
   void RestoreFromDB();
 
@@ -22,6 +28,7 @@ class DictEncoding {
   int64_t col_idx_;
   InfoStore* info_store_;
   std::map<std::string, int> value_codes_;
+  std::map<int, std::string> code_values_;
   // Inefficient way to avoid ever putting varchars in table.
   std::unordered_map<int, std::string> temp_codes_;
   int curr_code_{0};

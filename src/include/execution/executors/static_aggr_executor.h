@@ -1,11 +1,17 @@
-#include "execution/nodes/static_aggregation.h"
 #include "execution/executors/plan_executor.h"
+#include "execution/executors/expr_executor.h"
+#include "execution/nodes/static_aggregation.h"
+#include "execution/execution_types.h"
+
 
 namespace smartid {
+class TableIterator;
+class VectorProjection;
+class Bitmap;
+
 class StaticAggregateExecutor: public PlanExecutor {
  public:
-  StaticAggregateExecutor(StaticAggregateNode* node, std::vector<std::unique_ptr<PlanExecutor>> && children)
-  : PlanExecutor(std::move(children)), node_(node) {}
+  StaticAggregateExecutor(StaticAggregateNode* node, std::vector<std::unique_ptr<PlanExecutor>> && children);
 
   const VectorProjection * Next() override;
 
@@ -27,6 +33,6 @@ class StaticAggregateExecutor: public PlanExecutor {
   // The resulting vectors.
   std::vector<std::unique_ptr<Vector>> result_vecs_;
   // The result filter (contains only one item).
-  Filter result_filter_;
+  std::unique_ptr<Bitmap> result_filter_;
 };
 }

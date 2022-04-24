@@ -1,4 +1,7 @@
 #include "execution/vector_ops.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "storage/filter.h"
 
 namespace smartid {
 /////////////////////////////////////////////////
@@ -7,7 +10,7 @@ namespace smartid {
 
 template<typename in_cpp_type, typename out_cpp_type>
 __attribute__((noinline))
-void TemplatedScatterVector(const Vector *in, const Filter *filter, uint64_t val_offset, Vector *out) {
+void TemplatedScatterVector(const Vector *in, const Bitmap *filter, uint64_t val_offset, Vector *out) {
   out->Resize(in->NumElems());
   auto in_data = in->DataAs<in_cpp_type>();
   auto out_data = out->MutableDataAs<char *>();
@@ -30,7 +33,7 @@ void TemplatedScatterVector(const Vector *in, const Filter *filter, uint64_t val
         }
 
 template<typename out_cpp_type>
-void ScatterByOutType(const Vector *in, const Filter *filter, uint64_t val_offset, Vector *out) {
+void ScatterByOutType(const Vector *in, const Bitmap *filter, uint64_t val_offset, Vector *out) {
   switch (in->ElemType()) {
     SQL_TYPE(TEMPLATED_SCATTER, TEMPLATED_SCATTER)
   }
@@ -43,7 +46,7 @@ void ScatterByOutType(const Vector *in, const Filter *filter, uint64_t val_offse
         }
 
 void VectorOps::ScatterVector(const Vector *in,
-                              const Filter *filter,
+                              const Bitmap *filter,
                               SqlType out_type,
                               uint64_t val_offset,
                               Vector *out) {
@@ -62,16 +65,19 @@ void VectorOps::ScatterVector(const Vector *in,
  */
 template<typename cpp_type1, typename cpp_type2>
 __attribute__((noinline))
-void TemplatedGatherCompareVector(const Vector *in1, const Vector *in2, Filter *filter, uint64_t val_offset) {
+void TemplatedGatherCompareVector(const Vector *in1, const Vector *in2, Bitmap *filter, uint64_t val_offset) {
   auto in_data1 = in1->DataAs<char *>();
   auto in_data2 = in2->DataAs<cpp_type2>();
   auto gather_compare_fn = [&](sel_t i) {
-    if constexpr (std::is_same_v<cpp_type1, cpp_type2>) {
+    if constexpr (std::is_same_v<cpp_type1, int64_t> && std::is_same_v<cpp_type1, cpp_type2>) {
+      // Hack for smartids.
+      return (in_data2[i] & Settings::KEY_MASK) == ((*reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset)) & Settings::KEY_MASK);
+    } else if constexpr (std::is_same_v<cpp_type1, cpp_type2>) {
       return in_data2[i] == *reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset);
     } else if constexpr (std::is_arithmetic_v<cpp_type1> && std::is_arithmetic_v<cpp_type2>) {
       return in_data2[i] == *reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset);
     } else {
-      std::cout << "BAD CASTING" << std::endl;
+      ASSERT(false, "Bad casting");
       return false;
     }
   };
@@ -88,7 +94,7 @@ void TemplatedGatherCompareVector(const Vector *in1, const Vector *in2, Filter *
  * Intermediate templated step.
  */
 template<typename cpp_type1>
-void GatherCompareByInType(const Vector *in1, const Vector *in2, Filter *filter, uint64_t val_offset) {
+void GatherCompareByInType(const Vector *in1, const Vector *in2, Bitmap *filter, uint64_t val_offset) {
   auto vec_type2 = in2->ElemType();
   switch (vec_type2) {
     SQL_TYPE(TEMPLATED_GATHER_COMPARE, TEMPLATED_GATHER_COMPARE)
@@ -101,7 +107,7 @@ void GatherCompareByInType(const Vector *in1, const Vector *in2, Filter *filter,
             break; \
         }
 
-void VectorOps::GatherCompareVector(const Vector *in1, const Vector *in2, Filter *filter, SqlType in_type,
+void VectorOps::GatherCompareVector(const Vector *in1, const Vector *in2, Bitmap *filter, SqlType in_type,
                                     uint64_t val_offset) {
   switch (in_type) {
     SQL_TYPE(GATHER_COMPARE_BY_IN_TYPE, GATHER_COMPARE_BY_IN_TYPE)
@@ -138,7 +144,7 @@ void VectorOps::ScatterScalar(const Vector *in, sel_t i, char *out, uint64_t val
 /// Test Set Mark
 /////////////////////////////////////////////////////////////////
 
-void VectorOps::TestSetMarkVector(Filter *filter, uint64_t val_offset, Vector *out) {
+void VectorOps::TestSetMarkVector(Bitmap *filter, uint64_t val_offset, Vector *out) {
   auto out_data = out->MutableDataAs<char*>();
   filter->Update([&](sel_t i) {
     auto val_ptr = out_data[i] + val_offset;

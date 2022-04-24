@@ -1,4 +1,7 @@
 #include "execution/vector_ops.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "storage/filter.h"
 
 namespace smartid {
 //////////////////////////////////
@@ -11,7 +14,7 @@ namespace smartid {
  */
 template<typename in_cpp_type, typename out_cpp_type>
 __attribute__((noinline))
-void TemplatedGatherVector(const Vector *in, const Filter *filter, uint64_t val_offset, Vector *out) {
+void TemplatedGatherVector(const Vector *in, const Bitmap *filter, uint64_t val_offset, Vector *out) {
   out->Resize(in->NumElems());
   auto in_data = in->DataAs<char *>();
   auto out_data = out->MutableDataAs<out_cpp_type>();
@@ -21,7 +24,7 @@ void TemplatedGatherVector(const Vector *in, const Filter *filter, uint64_t val_
     } else if constexpr (std::is_arithmetic_v<in_cpp_type> && std::is_arithmetic_v<out_cpp_type>) {
       out_data[i] = static_cast<out_cpp_type>(*reinterpret_cast<const in_cpp_type *>(in_data[i] + val_offset));
     } else {
-      std::cout << "BAD CASTING" << std::endl;
+      ASSERT(false, "Bad Casting!");
     }
   };
   filter->Map(gather_fn);
@@ -37,7 +40,7 @@ void TemplatedGatherVector(const Vector *in, const Filter *filter, uint64_t val_
  * Intermediary Helper for the gather function. The in_cpp_type param is the raw type of the input value.
  */
 template<typename in_cpp_type>
-void GatherByInType(const Vector *in, const Filter *filter, uint64_t val_offset, Vector *out) {
+void GatherByInType(const Vector *in, const Bitmap *filter, uint64_t val_offset, Vector *out) {
   auto out_vec_type = out->ElemType();
   switch (out_vec_type) {
     SQL_TYPE(TEMPLATED_GATHER, TEMPLATED_GATHER)
@@ -51,7 +54,7 @@ void GatherByInType(const Vector *in, const Filter *filter, uint64_t val_offset,
         }
 
 void VectorOps::GatherVector(const Vector *in,
-                             const Filter *filter,
+                             const Bitmap *filter,
                              SqlType in_type,
                              uint64_t val_offset,
                              Vector *out) {

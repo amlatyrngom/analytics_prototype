@@ -1,8 +1,12 @@
 #include "execution/executors/sort_executor.h"
+#include "execution/vector_ops.h"
 
 namespace smartid {
 const VectorProjection *SortExecutor::Next() {
-  if (sorted_) return nullptr;
+  if (sorted_) {
+    Clear();
+    return nullptr;
+  }
   sorted_ = true;
   const VectorProjection *vp;
   bool first{true};
@@ -107,8 +111,8 @@ void SortExecutor::Sort() {
 }
 
 void SortExecutor::Collect() {
-  sort_entries_.ShallowReset(sort_vector_.size(), reinterpret_cast<char *>(sort_vector_.data()));
-  result_filter_.Reset(sort_vector_.size(), FilterMode::BitmapFull);
+  result_filter_.Reset(sort_vector_.size());
+  sort_entries_.ShallowReset(sort_vector_.size(), reinterpret_cast<char *>(sort_vector_.data()), result_filter_.Words());
   for (uint64_t i = 0; i < sort_types_.size(); i++) {
     auto col_type = sort_types_[i];
     auto col_offset = sort_offsets_[i];
@@ -116,5 +120,10 @@ void SortExecutor::Collect() {
     vec->Resize(sort_vector_.size());
     VectorOps::GatherVector(&sort_entries_, &result_filter_, col_type, col_offset, vec);
   }
+}
+
+void SortExecutor::Clear() {
+  sort_vector_.clear();
+  sort_alloc_space_.clear();
 }
 }

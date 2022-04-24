@@ -5,3 +5,5 @@ smartids_data
 .ipynb_checkpoints
 installations
 sample_workload_data
+job_light_workload_data
+tpch_data

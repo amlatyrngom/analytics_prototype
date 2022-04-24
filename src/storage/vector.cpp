@@ -41,14 +41,26 @@ void Vector::Reset(uint64_t num_elems, const char *data, const uint64_t *null_bi
 
 void Vector::Resize(uint64_t new_size) {
   null_bitmap_->Reset(new_size);
-  if (new_size == num_elems_) return;
+  if (new_size == num_elems_) {
+    data_ = owned_data_.data();
+    return;
+  }
   auto alloc_size = std::max(settings_vec_size_, new_size) * elem_size_;
   owned_data_.resize(alloc_size);
   if (elem_type_ == SqlType::Varchar) {
     allocated_strings_.resize(new_size);
   }
-  data_ = owned_data_.data();
   num_elems_ = new_size;
+  data_ = owned_data_.data();
 }
+
+void Vector::ShallowReset(uint64_t num_elems, const char *data, const uint64_t *null_bitmap) {
+  ASSERT(elem_type_ != SqlType::Varchar, "Shallow reset should not be called on varchars");
+  null_bitmap_->ShallowReset(num_elems, null_bitmap);
+  data_ = data;
+  num_elems_ = num_elems;
+}
+
+
 
 }

@@ -1,36 +1,11 @@
 #pragma once
 
 #include "common/types.h"
+#include "execution/execution_types.h"
+
 
 namespace smartid {
-// Op Types.
-#define OP_TYPE(COMP, ARITH) \
-COMP(LT, ops::Lt)\
-COMP(LE, ops::Le)\
-COMP(NE, ops::Ne)\
-COMP(EQ, ops::Eq)\
-COMP(GT, ops::Gt)\
-COMP(GE, ops::Ge)\
-ARITH(ADD, ops::Add)\
-ARITH(MUL, ops::Mul)\
-ARITH(SUB, ops::Sub)\
-ARITH(DIV, ops::Div)
 
-#define ENUM_DEFINER(entry, ...) entry,
-enum class OpType {
-  OP_TYPE(ENUM_DEFINER, ENUM_DEFINER)
-};
-#undef ENUM_DEFINER
-
-
-enum class ExprType {
-  Constant,
-  Column,
-  BinaryComp,
-//  BinaryArith,
-//  EmbeddingCheck,
-//  Param,
-};
 
 class ExprNode {
  public:
@@ -50,7 +25,11 @@ class ExprNode {
     return children_[idx];
   }
 
- private:
+  [[nodiscard]] uint64_t NumChildren() const {
+    return children_.size();
+  }
+
+ protected:
   ExprType expr_type_;
   std::vector<ExprNode*> children_;
 };
@@ -83,6 +62,13 @@ class ColumnNode : public ExprNode {
   uint64_t col_idx_;
 };
 
+class NonNullNode : public ExprNode {
+ public:
+  explicit NonNullNode(ExprNode* child) : ExprNode(ExprType::NonNull, {child}) {}
+
+ private:
+};
+
 
 class BinaryCompNode : public ExprNode {
  public:
@@ -95,6 +81,39 @@ class BinaryCompNode : public ExprNode {
  private:
   OpType op_;
 };
+
+class BetweenNode : public ExprNode {
+ public:
+  BetweenNode(ExprNode* left, ExprNode* middle, ExprNode* right, bool left_closed, bool right_closed)
+  : ExprNode(ExprType::Between, {left, middle, right})
+  , left_closed_(left_closed)
+  , right_closed_(right_closed) {}
+
+  [[nodiscard]] bool LeftClosed() const {
+    return left_closed_;
+  }
+
+  [[nodiscard]] bool RightClosed() const {
+    return right_closed_;
+  }
+
+ private:
+  bool left_closed_;
+  bool right_closed_;
+};
+
+
+class InNode: public ExprNode {
+ public:
+  InNode(ExprNode* input, const std::vector<ExprNode*>& vals)
+  : ExprNode(ExprType::InList, {input}) {
+    for (auto& val: vals) {
+      children_.emplace_back(val);
+    }
+  }
+};
+
+
 
 //
 //class BinaryArithNode : public ExprNode {
@@ -113,43 +132,27 @@ class BinaryCompNode : public ExprNode {
 //  SqlType res_type_;
 //};
 //
-//class EmbeddingCheckNode : public ExprNode {
-// public:
-//  EmbeddingCheckNode(ExprNode *child, int16_t mask): ExprNode(ExprType::EmbeddingCheck, {child}), mask_(mask) {}
+class EmbeddingCheckNode : public ExprNode {
+ public:
+  EmbeddingCheckNode(ExprNode *child, int64_t mask): ExprNode(ExprType::EmbeddingCheck, {child}), mask_(mask) {}
+
+  [[nodiscard]] int64_t Mask() const {
+    return mask_;
+  }
+
+ private:
+  int64_t mask_;
+};
 //
-//  [[nodiscard]] int16_t Mask() const {
-//    return mask_;
-//  }
-//
-// private:
-//  int16_t mask_;
-//};
-//
-//class ParamNode: public ExprNode {
-// public:
-//  struct Stats {
-//    std::vector<Value> vals;
-//    SqlType val_type{-1};
-//  };
-// public:
-//  explicit ParamNode(std::string param_name): ExprNode(ExprType::Param, {}), param_name_(std::move(param_name)) {}
-//
-//  void ReportStats(const Value& val, SqlType val_type) {
-//    stats_.vals.emplace_back(val);
-//    ASSERT(static_cast<int>(stats_.val_type) == -1 || stats_.val_type==val_type, "Changing param type!!!");
-//    stats_.val_type = val_type;
-//  }
-//
-//  [[nodiscard]] const Stats& GetStats() const {
-//    return stats_;
-//  }
-//
-//  const auto& ParamName() const {
-//    return param_name_;
-//  }
-//
-// private:
-//  std::string param_name_;
-//  Stats stats_;
-//};
+class ParamNode: public ExprNode {
+ public:
+  explicit ParamNode(std::string param_name): ExprNode(ExprType::Param, {}), param_name_(std::move(param_name)) {}
+
+  const auto& ParamName() const {
+    return param_name_;
+  }
+
+ private:
+  std::string param_name_;
+};
 }

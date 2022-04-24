@@ -6,85 +6,52 @@
 #include <unordered_set>
 #include <memory>
 #include "common/types.h"
+#include "logical_nodes.h"
 
 namespace smartid {
 
 struct TableInfo {
   // Constructor.
-  TableInfo(std::string name, Schema&& schema, std::string datafile, std::unordered_set<std::string>&& pks, bool to_many)
+  TableInfo(std::string name, Schema&& schema, std::string datafile, std::unordered_set<std::string>&& pks, bool to_many, bool is_central)
       : name(std::move(name))
       , schema(std::move(schema))
       , datafile(std::move(datafile))
       , pks(pks)
-      , to_many(to_many) {}
+      , to_many(to_many)
+      , is_central(is_central){}
 
   std::string name;
   Schema schema;
   std::string datafile;
   std::unordered_set<std::string> pks;
   bool to_many;
+  bool is_central;
+
+  // Computed when reading queries.
+  std::unordered_set<uint64_t> used_cols{};
 
   // Computed during statistics collection.
-  double sample_rate{0};
+  double sample_size{0};
   double base_size{0};
 };
 
-struct LogicalFilter {
-  std::string col_name;
-  std::string op;
-  bool lo_strict{false};
-  bool hi_strict{false};
-  std::vector<std::string> vals; // should contain a single '?' when vals should be sampled.
+struct SmartIDInfo {
+  std::string from_table_name;
+  TableInfo* from_table_info;
+  std::string from_col_name;
+  uint64_t from_col_idx;
+  std::string from_key_col_name;
+  std::string to_table_name;
+  TableInfo* to_table_info;
+  std::string to_col_name;
+  uint64_t to_col_idx;
+  uint64_t bit_offset;
+  uint64_t num_bits;
+  QueryInfo* smartid_query{nullptr};
 
   void ToString(std::ostream& os) const;
 };
 
-struct LogicalScanNode {
-  TableInfo* table_info{nullptr};
-  std::vector<LogicalFilter> filters;
-  std::vector<std::string> projections;
-
-  void ToString(std::ostream& os) const;
-
-//  double output_size{std::numeric_limits<double>::max()};
-//  double cost{std::numeric_limits<double>::max()};
-//  double base_size{std::numeric_limits<double>::max()};
-};
-
-struct LogicalJoinNode {
-  // Only one of left_join and left_scan is allowed to be non-null.
-  LogicalJoinNode* left_join{nullptr};
-  LogicalScanNode* left_scan{nullptr};
-  // Right table is always a table scan or an index.
-  LogicalScanNode* right_scan{nullptr};
-  std::vector<TableInfo*> scanned_tables;
-//  double output_size{std::numeric_limits<double>::max()};
-//  double cost{std::numeric_limits<double>::max()};
-};
-
-struct QueryInfo {
-  std::string name;
-  bool count{false};
-  std::vector<LogicalScanNode*> scans;
-  std::vector<LogicalJoinNode*> join_orders; // empty when scans.size() == 1;
-
-  // Print to stream.
-  void ToString(std::ostream& os) const;
-
-  // Copy a scan using given allocator.
-  LogicalScanNode* CopyScan(std::vector<std::unique_ptr<LogicalScanNode>>& scan_allocator);
-
-  // Copy join order using given allocator.
-  std::vector<LogicalJoinNode*> CopyJoinOrders(std::vector<std::unique_ptr<LogicalScanNode>>& scan_allocator, std::vector<std::unique_ptr<LogicalJoinNode>>& join_allocator);
-
- private:
-  // Copy join order using given allocator.
-  static LogicalJoinNode* RecursiveCopy(LogicalJoinNode* src, std::vector<std::unique_ptr<LogicalScanNode>>& scan_allocator, std::vector<std::unique_ptr<LogicalJoinNode>>& join_allocator);
-
- public:
-  std::vector<std::unique_ptr<LogicalScanNode>> allocated_scans;
-  std::vector<std::unique_ptr<LogicalJoinNode>> allocated_joins;
-};
 
 struct WorkloadInfo {
   std::string workload_name;
@@ -97,7 +64,15 @@ struct WorkloadInfo {
   uint64_t log_mem_space;
   uint64_t log_disk_space;
   bool reload{false};
+  bool gen_costs{false};
+  bool rebuild{false};
+  int budget{256};
   std::unordered_map<std::string, std::unique_ptr<TableInfo>> table_infos;
   std::unordered_map<std::string, std::unique_ptr<QueryInfo>> query_infos;
+  std::unordered_map<std::string, std::unique_ptr<QueryInfo>> mat_view_queries;
+
+  std::unordered_set<std::string> available_mat_views;
+  std::unordered_set<std::string> available_idxs;
+  std::vector<std::unique_ptr<SmartIDInfo>> smartid_infos;
 };
 }

@@ -8,6 +8,7 @@ struct Settings {
   static constexpr uint64_t BITMAP_BITS_PER_WORD = 64;
   static constexpr uint64_t BITMAP_BYTES_PER_WORD = 8;
   static constexpr uint64_t LOG_MAX_TUPLES_PER_TABLE = 48;
+  static constexpr int64_t KEY_MASK = 0xFFFFFFFFFFFF;
 
 
   static Settings *Instance() {
@@ -73,6 +74,22 @@ struct Settings {
     data_folder_ = s;
   }
 
+  const auto& ScanDiscount() const {
+    return scan_discount_;
+  }
+
+  void SetScanDiscount(double discount) {
+    scan_discount_ = discount;
+  }
+
+  const auto& IdxLookupOverhead() const {
+    return idx_lookup_overhead_;
+  }
+
+  void SetIdxLookupOverhead(double overhead) {
+    idx_lookup_overhead_ = overhead;
+  }
+
 
  private:
   uint64_t log_vec_size_{10}; // Keep small to prevent too sparse bitmap.
@@ -81,6 +98,8 @@ struct Settings {
   uint64_t buffer_disk_{(1ull << 30) << 8}; // 256GB of disk.
   std::string data_folder_{"smartids_data"};
   uint64_t node_id_ = 0; // For supporting many nodes.
+  double scan_discount_{0.1};
+  double idx_lookup_overhead_{2.0};
   Settings() = default;
 };
 

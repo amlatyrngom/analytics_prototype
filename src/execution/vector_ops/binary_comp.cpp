@@ -61,6 +61,8 @@ void TemplatedBinaryCompSame(const Vector* in1, const Vector* in2, Bitmap* filte
     TemplatedBinaryCompSame<Op, cpp_type>(data1, data2[0], filter);
   } else {
     // Both sides are vectors.
+    // Remove nulls
+    Bitmap::Intersect(in1->NullBitmap()->Words(), in2->NullBitmap()->Words(), filter->TotalSize(), filter->MutableWords());
     TemplatedBinaryCompSame<Op>(data1, data2, filter);
   }
 }

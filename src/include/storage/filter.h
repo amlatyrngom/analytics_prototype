@@ -16,13 +16,15 @@ class Bitmap {
    * Constructor
    */
   explicit Bitmap(uint64_t size = 0)
-      : arr_(ComputeNumWords(size)), num_bits_(size), num_words_(ComputeNumWords(size)) {}
+      : arr_(ComputeNumWords(size)), words_(arr_.data()), num_bits_(size), num_words_(ComputeNumWords(size)) {}
 
   /**
    * Set the size and set all bits to 1.
    */
   void Reset(sel_t s);
   void Reset(sel_t s, const uint64_t* words);
+  void ShallowReset(sel_t s, const uint64_t* words);
+  static void ResetAll(sel_t s, uint64_t* b);
 
   /**
    * Copy other bitmap into this one.
@@ -54,7 +56,11 @@ class Bitmap {
    * Return the array of words.
    */
   [[nodiscard]] const uint64_t *Words() const {
-    return arr_.data();
+    return words_;
+  }
+
+  uint64_t *MutableWords() {
+    return arr_.data(); // Assumes bitmap owns data.
   }
 
   static uint64_t AllocSize(uint64_t num_bits) {
@@ -81,7 +87,7 @@ class Bitmap {
    */
   template<typename F>
   inline void Map(F f) const {
-    Bitmap::Map(Words(), num_words_, f);
+    Bitmap::Map(Words(), num_bits_, f);
   }
 
   template<typename F>
@@ -181,15 +187,16 @@ class Bitmap {
    */
   void SubsetDifference(const Bitmap *bitmap2, Bitmap *out) const;
 
-  static void Intersect(const uint64_t* b1, const uint64_t* b2, uint64_t size, uint64_t* out) {
-    // All inputs must have same size
-    for (uint64_t i = 0; i < size; i++) {
-      out[i] = b1[i] & b2[i];
-    }
-  }
+  void Union(const Bitmap* bitmap2);
+
+  static void Intersect(const uint64_t* b1, const uint64_t* b2, uint64_t size, uint64_t* out);
 
   static void SetBit(uint64_t* b, uint64_t idx) {
     b[WordIdx(idx)] |= (1ull << BitIdx(idx));
+  }
+
+  static void UnsetBit(uint64_t* b, uint64_t idx) {
+    b[WordIdx(idx)] &= ~(1ull << BitIdx(idx));
   }
 
   static bool IsSet(const uint64_t* b, uint64_t idx) {
@@ -199,7 +206,7 @@ class Bitmap {
   static uint64_t NumOnes(const uint64_t* b, uint64_t num_bits);
 
   [[nodiscard]] uint64_t NumOnes() const {
-    return NumOnes(arr_.data(), num_bits_);
+    return NumOnes(words_, num_bits_);
   }
 
   static bool HasUnset(const uint64_t* b, uint64_t num_bits) {
@@ -225,6 +232,7 @@ class Bitmap {
   }
 
   std::vector<uint64_t> arr_;
+  const uint64_t* words_; // allows shallow reset
   sel_t num_bits_;
   sel_t num_words_;
 };

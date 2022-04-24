@@ -1,6 +1,11 @@
 #include "execution/nodes/hash_join_node.h"
 #include "execution/executors/plan_executor.h"
-
+#include "common/types.h"
+#include "storage/filter.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "execution/execution_common.h"
+#include "execution/bloom_filter.h"
 
 namespace smartid {
 
@@ -12,7 +17,7 @@ class HashJoinExecutor: public PlanExecutor {
   : PlanExecutor(std::move(children))
   , node_(node)
   , build_entries_(SqlType::Pointer)
-  , result_filter_(FilterMode::BitmapFull)
+  , result_filter_()
   {
     auto num_build_projection = 0;
     auto num_probe_projection = 0;
@@ -31,12 +36,10 @@ class HashJoinExecutor: public PlanExecutor {
 
   const VectorProjection * Next() override;
 
- protected:
-  void ReportStats() override {
-    node_->ReportStats(join_stats_);
-  }
-
  private:
+  // Clear
+  void Clear();
+
   PlanExecutor* BuildExecutor() {
     return Child(0);
   }
@@ -81,7 +84,7 @@ class HashJoinExecutor: public PlanExecutor {
    */
   void CheckKeys(const VectorProjection *vp);
 
-  void TestSetMarks(Filter* filter, Vector* mark);
+  void TestSetMarks(Bitmap* filter, Vector* mark);
 
   /**
    * Advance the chains.
@@ -103,7 +106,6 @@ class HashJoinExecutor: public PlanExecutor {
    */
   void GatherMatches(const VectorProjection *vp);
 
-  void CollectMatchStats();
  private:
   HashJoinNode * node_;
   bool built_{false};
@@ -119,9 +121,9 @@ class HashJoinExecutor: public PlanExecutor {
   Vector probe_marks_{SqlType::Char};
   // Stores & tracks entries with matching hashes.
   Vector candidates_{SqlType::Pointer};
-  Filter cand_filter_;
+  Bitmap cand_filter_;
   // Tracks entries with equal keys.
-  Filter match_filter_;
+  Bitmap match_filter_;
   // List of matching {probe_idx, HTEntry}.
   std::vector<uint64_t> probe_matches_;
   std::vector<const HTEntry *> build_matches_;
@@ -134,12 +136,11 @@ class HashJoinExecutor: public PlanExecutor {
   std::vector<std::unique_ptr<Vector>> probe_vecs_;
   bool first_probe_{true};
   // Final filter.
-  Filter result_filter_;
+  Bitmap result_filter_;
   // Bloom filter
   std::unique_ptr<BloomFilterType> bloom_;
   // Join stats
-  JoinStats join_stats_;
-  Filter build_out_filter_;
-  Filter probe_out_filter_;
+  Bitmap build_out_filter_;
+  Bitmap probe_out_filter_;
 };
 }

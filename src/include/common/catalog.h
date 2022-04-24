@@ -12,6 +12,7 @@ class BufferManager;
 class Table;
 class Schema;
 class WorkloadInfo;
+class RowIDIndex;
 
 /**
  * Catalog of tables and indices
@@ -25,7 +26,10 @@ class Catalog {
   /**
    * Create a new table in the catalog.
    */
-  Table *CreateTable(const std::string &name, const Schema *schema);
+  Table *CreateTable(const std::string &name, const Schema *schema, bool add_row_id=true);
+
+  // Remove all table blocks if table exists.
+  Table *CreateOrClearTable(const std::string &name, const Schema *schema);
 
   /**
    * Return the table with the given name.
@@ -36,24 +40,11 @@ class Catalog {
 
   static std::string SampleName(const std::string& table_name);
 
-//  const TableStats* GetTableStats(const Table* table) const {
-//    if (tables_stats_.find(table) == tables_stats_.end()) {
-//      return nullptr;
-//    }
-//    return tables_stats_.at(table).get();
-//  }
-//
-//  const TableStats* MakeTableStats(const Table* table, const std::vector<uint64_t>& wanted_cols, const std::vector<HistogramType>& wanted_hist_types) {
-//    if (const auto& iter = tables_stats_.find(table); iter != tables_stats_.end()) {
-//      if (iter->second->HasAll(wanted_cols, wanted_hist_types)) return iter->second.get();
-//    }
-//    auto table_stats = std::make_unique<TableStats>(table, wanted_cols, wanted_hist_types);
-//    auto ret = table_stats.get();
-//    tables_stats_.emplace(table, std::move(table_stats));
-//    return ret;
-//  }
+  void AddIndex(const std::string& table_name, std::unique_ptr<RowIDIndex>&& index);
+  RowIDIndex* GetIndex(const std::string& table_name);
 
   BufferManager* BM();
+  WorkloadInfo* Workload();
 
   ~Catalog();
  private:
@@ -70,9 +61,7 @@ class Catalog {
   std::unordered_map<std::string, int64_t> table_name_id_map_;
   std::unordered_map<int64_t, std::unique_ptr<Table>> tables_;
 
-  // Table Stats
-//  std::unordered_map<const Table*, std::unique_ptr<TableStats>> tables_stats_;
-
+  std::unordered_map<std::string, std::unique_ptr<RowIDIndex>> table_name_indexes_;
   std::unique_ptr<InfoStore> info_store_;
   std::unique_ptr<BufferManager> buffer_manager_;
   std::unique_ptr<WorkloadInfo> workload_info_;

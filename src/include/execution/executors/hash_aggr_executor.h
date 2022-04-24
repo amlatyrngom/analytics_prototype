@@ -1,7 +1,13 @@
 #include "execution/nodes/hash_aggr_node.h"
 #include "execution/executors/plan_executor.h"
+#include "common/types.h"
+#include "storage/filter.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "execution/execution_common.h"
 
 namespace smartid {
+
 class HashAggregationExecutor: public PlanExecutor {
  public:
   HashAggregationExecutor(HashAggregationNode* node, std::vector<std::unique_ptr<PlanExecutor>> && children)
@@ -56,17 +62,20 @@ class HashAggregationExecutor: public PlanExecutor {
 
 
  private:
+
+  void Clear();
+
   HashAggregationNode* node_;
   // Whether Accumulate has been called.
   bool accumulated_{false};
   // The aggregation table.
   AggrTable agg_table_;
   // Result filter and vectors.
-  Filter result_filter_;
+  Bitmap result_filter_;
   std::vector<std::unique_ptr<Vector>> result_vecs_;
   // Matching and non matching filter.
-  Filter non_match_filter_;
-  Filter match_filter_;
+  Bitmap non_match_filter_;
+  Bitmap match_filter_;
   // Stores hash values.
   Vector hashes_{SqlType::Int64};
   // Types & offset of build columns within the HTEntry payload.
@@ -75,7 +84,7 @@ class HashAggregationExecutor: public PlanExecutor {
   uint64_t entry_size_{0}; // Size of payload.
   // Stores & tracks entries with matching hashes.
   Vector candidates_{SqlType::Pointer};
-  Filter cand_filter_;
+  Bitmap cand_filter_;
   // Helper vector to store ht entries.
   Vector build_entries_;
   std::vector<std::vector<char>> build_alloc_space_;

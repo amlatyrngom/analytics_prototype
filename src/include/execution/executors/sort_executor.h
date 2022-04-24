@@ -1,5 +1,8 @@
 #include "execution/executors/plan_executor.h"
 #include "execution/nodes/sort_node.h"
+#include "storage/filter.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
 
 namespace smartid {
 class SortExecutor : public PlanExecutor {
@@ -11,6 +14,9 @@ class SortExecutor : public PlanExecutor {
   const VectorProjection * Next() override;
 
  private:
+  // Clear
+  void Clear();
+
   /**
    * Compute offsets.
    */
@@ -48,7 +54,7 @@ class SortExecutor : public PlanExecutor {
   // Used for VectorOps. Shallow copy of the sort vector.
   Vector sort_entries_{SqlType::Pointer};
   // Result filter and vectors.
-  Filter result_filter_;
+  Bitmap result_filter_;
   std::vector<std::unique_ptr<Vector>> result_vecs_;
   bool sorted_{false};
 };

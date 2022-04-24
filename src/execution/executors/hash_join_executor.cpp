@@ -1,4 +1,5 @@
 #include "execution/executors/hash_join_executor.h"
+#include "execution/vector_ops.h"
 
 namespace smartid {
 void HashJoinExecutor::PrepareBuild(const VectorProjection *vp) {
@@ -42,8 +43,6 @@ void HashJoinExecutor::MakeEntries(const VectorProjection *vp) {
   auto vp_filter = vp->GetFilter();
   auto num_new_entries = vp_filter->ActiveSize();
   std::vector<char> alloc_space(num_new_entries * entry_size_);
-  join_stats_.ht_size += alloc_space.size();
-  join_stats_.build_in += num_new_entries;
   // Initialize the entries to point within the buffer.
   uint64_t curr_alloc_idx = 0;
   vp_filter->Map([&](int i) {
@@ -100,23 +99,21 @@ void HashJoinExecutor::Build() {
     VectorInsert(vp);
     // Insertion timer end
     auto end = std::chrono::high_resolution_clock::now();
-    join_stats_.insert_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
   }
   built_ = true;
 }
 
 void HashJoinExecutor::FindCandidates(const VectorProjection *vp) {
   auto hash_data = hashes_.DataAs<int64_t>();
-  auto cand_data = candidates_.MutableDataAs<const HTEntry *>();
   cand_filter_.SetFrom(vp->GetFilter());
+  candidates_.Resize(cand_filter_.TotalSize());
+  auto cand_data = candidates_.MutableDataAs<const HTEntry *>();
   // Only select elements with a match;
   // Check bloom filter first if needed.
   if (node_->UseBloom()) {
-    join_stats_.bloom_before += cand_filter_.ActiveSize();
     cand_filter_.Update([&](sel_t i) {
       return bloom_->Test(hash_data[i]);
     });
-    join_stats_.bloom_after += cand_filter_.ActiveSize();
   }
   cand_filter_.Update([&](sel_t i) {
     if (const auto &it = join_table_.find(hash_data[i]); it != join_table_.end()) {
@@ -127,7 +124,7 @@ void HashJoinExecutor::FindCandidates(const VectorProjection *vp) {
   });
 }
 
-void HashJoinExecutor::TestSetMarks(Filter *filter, Vector *mark) {
+void HashJoinExecutor::TestSetMarks(Bitmap *filter, Vector *mark) {
   auto mark_data = mark->MutableDataAs<char>();
   filter->Update([&](sel_t i) {
     if (mark_data[i] == 0) {
@@ -138,26 +135,6 @@ void HashJoinExecutor::TestSetMarks(Filter *filter, Vector *mark) {
   });
 }
 
-void HashJoinExecutor::CollectMatchStats() {
-  // Build out
-  if (node_->GetJoinType() == JoinType::LEFT_SEMI) {
-    // Semi join already removed duplicates.
-    join_stats_.build_out += match_filter_.ActiveSize();
-  } else {
-    build_out_filter_.SetFrom(&match_filter_);
-    VectorOps::TestSetMarkVector(&build_out_filter_, build_offsets_.back(), &candidates_);
-    join_stats_.build_out += build_out_filter_.ActiveSize();
-  }
-  // Probe out
-  if (node_->GetJoinType() == JoinType::RIGHT_SEMI) {
-    // Semi join already removed duplicates.
-    join_stats_.probe_out += match_filter_.ActiveSize();
-  } else {
-    probe_out_filter_.SetFrom(&match_filter_);
-    TestSetMarks(&probe_out_filter_, &probe_marks_);
-    join_stats_.probe_out += probe_out_filter_.ActiveSize();
-  }
-}
 
 void HashJoinExecutor::CheckKeys(const VectorProjection *vp) {
   match_filter_.SetFrom(&cand_filter_);
@@ -177,8 +154,6 @@ void HashJoinExecutor::CheckKeys(const VectorProjection *vp) {
   if (node_->GetJoinType() == JoinType::RIGHT_SEMI) {
     TestSetMarks(&match_filter_, &probe_marks_);
   }
-  // Collect match statistics
-//  CollectMatchStats();
   // Add all matching columns.
   auto cand_data = candidates_.DataAs<const HTEntry *>();
   match_filter_.Map([&](sel_t i) {
@@ -202,10 +177,11 @@ void HashJoinExecutor::GatherBuildCol(uint64_t col_idx, uint64_t vec_idx) {
   auto &vec = build_vecs_[vec_idx];
   if (vec == nullptr) {
     // Initial allocation.
-    vec = std::make_unique<Vector>(build_types_[col_idx], build_matches_.size());
+    vec = std::make_unique<Vector>(build_types_[col_idx]);
+    vec->Resize(build_matches_.size());
   }
   // Place HT Entries into a vector.
-  build_entries_.ShallowReset(build_matches_.size(), reinterpret_cast<char *>(build_matches_.data()));
+  build_entries_.ShallowReset(build_matches_.size(), reinterpret_cast<char *>(build_matches_.data()), result_filter_.Words());
 
   // Gather the right values
   auto build_offset = build_offsets_[col_idx];
@@ -222,7 +198,8 @@ void HashJoinExecutor::GatherProbeCol(const VectorProjection *vp, uint64_t col_i
   auto &vec = probe_vecs_[vec_idx];
   auto orig_vec = vp->VectorAt(col_idx);
   if (vec == nullptr) {
-    vec = std::make_unique<Vector>(orig_vec->ElemType(), build_matches_.size());
+    vec = std::make_unique<Vector>(orig_vec->ElemType());
+    vec->Resize(probe_matches_.size());
   }
   VectorOps::SelectVector(orig_vec, probe_matches_, vec.get());
   if (first_probe_) {
@@ -231,7 +208,7 @@ void HashJoinExecutor::GatherProbeCol(const VectorProjection *vp, uint64_t col_i
 }
 
 void HashJoinExecutor::GatherMatches(const VectorProjection *vp) {
-  result_filter_.Reset(build_matches_.size(), FilterMode::BitmapFull);
+  result_filter_.Reset(build_matches_.size());
   auto build_vec_idx = 0;
   auto probe_vec_idx = 0;
 
@@ -258,29 +235,16 @@ const VectorProjection *HashJoinExecutor::Next() {
   // Probe
   auto vp = Child(1)->Next();
   if (vp == nullptr) {
-//    std::cout << "Bloom Before: " << bloom_before_ << std::endl;
-//    std::cout << "Bloom After: " << bloom_after_ << std::endl;
-//    std::cout << "Build In: " << join_stats_.build_in << std::endl;
-//    std::cout << "Build Out: " << join_stats_.build_out << std::endl;
-//    std::cout << "Probe In: " << join_stats_.probe_in << std::endl;
-//    std::cout << "Probe Out: " << join_stats_.probe_out << std::endl;
-//    std::cout << "HT Size: " << join_stats_.ht_size << std::endl;
+    Clear();
     return nullptr;
   }
-  auto start = std::chrono::high_resolution_clock::now();
   // For right-semi-join and statistics, set probe marks to 0;
-//  probe_marks_.Resize(vp->NumRows());
-//  VectorOps::InitVector(vp->GetFilter(), Value(char(0)), SqlType::Char, &probe_marks_);
-  // Record probe input size
-  join_stats_.probe_in += vp->GetFilter()->ActiveSize();
-  // Probe hash timer start
+  if (node_->GetJoinType() == JoinType::RIGHT_SEMI) {
+    probe_marks_.Resize(vp->NumRows());
+    VectorOps::InitVector(vp->GetFilter(), Value(char(0)), SqlType::Char, &probe_marks_);
+  }
   VectorHash(vp, node_->ProbeKeys());
-  // Probe hash timer end
-//  auto end = std::chrono::high_resolution_clock::now();
-//  join_stats_.probe_hash_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
 
-  // HT probe timer start.
-//  start = std::chrono::high_resolution_clock::now();
   FindCandidates(vp);
   build_matches_.clear();
   probe_matches_.clear();
@@ -289,16 +253,17 @@ const VectorProjection *HashJoinExecutor::Next() {
     AdvanceChains();
   }
   if (build_matches_.empty()) {
-    // HT probe timer end.
-    auto end = std::chrono::high_resolution_clock::now();
-    join_stats_.probe_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
     return Next();
   }
   GatherMatches(vp);
   first_probe_ = false;
-  auto end = std::chrono::high_resolution_clock::now();
-  join_stats_.probe_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
   return result_.get();
+}
+
+void HashJoinExecutor::Clear() {
+  join_table_.clear();
+  build_alloc_space_.clear();
+  bloom_ = nullptr;
 }
 
 }

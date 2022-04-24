@@ -80,6 +80,9 @@ class Vector {
 
   void Resize(uint64_t new_size);
 
+  void ShallowReset(uint64_t num_elems, const char *data, const uint64_t *null_bitmap);
+
+
  private:
   std::vector<char> owned_data_;
   std::unique_ptr<Bitmap> null_bitmap_;

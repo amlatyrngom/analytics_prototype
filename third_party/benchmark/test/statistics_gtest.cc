@@ -2,7 +2,7 @@
 // statistics_test - Unit tests for src/statistics.cc
 //===---------------------------------------------------------------------===//
 
-#include "../src/statistics.h"
+#include "../src/table_statistics.h"
 #include "gtest/gtest.h"
 
 namespace {

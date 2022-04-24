@@ -18,8 +18,8 @@ DictEncoding::DictEncoding(int64_t table_id, int64_t col_idx, InfoStore* info_st
         << "table_id BIGINT,"
         << "col_idx BIGINT,"
         << "val TEXT,"
-        << "code INT,"
-        << "PRIMARY KEY (table_id, col_idx));";
+        << "code INT"
+        << ");";
     auto q = ss.str();
     std::cout << q << std::endl;
     SQLite::Statement query(db, q);
@@ -40,10 +40,12 @@ void DictEncoding::RestoreFromDB() {
       SQLite::Statement q(db, "SELECT val, code FROM dict_encodings WHERE table_id=? AND col_idx=?");
       q.bind(1, table_id_);
       q.bind(2, col_idx_);
+      std::cout << q.getExpandedSQL() << std::endl;
       while (q.executeStep()) {
         const char* val = q.getColumn(0);
         int code = q.getColumn(1);
         value_codes_.emplace(val, code);
+        code_values_.emplace(code, val);
       }
     }
   } catch (std::exception& e) {
@@ -54,7 +56,9 @@ void DictEncoding::RestoreFromDB() {
 
 int DictEncoding::Insert(const std::string &val) {
   value_codes_[val] = 0;
-  return curr_code_++;
+  auto temp_code = curr_code_++;
+  temp_codes_[temp_code] = val;
+  return temp_code;
 }
 
 void DictEncoding::Finalize(Table *table) {
@@ -63,6 +67,7 @@ void DictEncoding::Finalize(Table *table) {
   int next_code = 0;
   for (const auto& [k, _]: value_codes_) {
     codes[k] = next_code;
+    code_values_[next_code] = k;
     next_code++;
   }
   value_codes_ = codes;
@@ -82,6 +87,7 @@ void DictEncoding::Finalize(Table *table) {
       int code = value_codes_[temp_codes_[temp_code]];
       col_data[row_idx] = code;
     });
+    table->BM()->Unpin(block_info, true);
   }
   temp_codes_.clear();
 
@@ -95,6 +101,7 @@ void DictEncoding::Finalize(Table *table) {
         q.bind(2, col_idx_);
         q.bind(3, val);
         q.bind(4, code);
+        std::cout << q.getExpandedSQL() << std::endl;
         q.exec();
         q.reset();
       }
@@ -102,6 +109,22 @@ void DictEncoding::Finalize(Table *table) {
   } catch (std::exception& e) {
     std::cout << e.what() << std::endl;
     throw e;
+  }
+
+}
+
+std::string DictEncoding::GetVal(int code) {
+  return code_values_.at(code);
+}
+
+int DictEncoding::GetCode(const std::string &val) {
+  return value_codes_.at(val);
+}
+
+void DictEncoding::ToString(std::ostream &os) {
+  os << "DictEncoding(num_codes=" << value_codes_.size() << ")" << std::endl;
+  for (const auto& [val, code]: value_codes_) {
+    os << val << " = " << code << std::endl;
   }
 }
 }

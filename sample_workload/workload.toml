@@ -3,11 +3,11 @@ workload_title = "sample_workload"
 input_folder = "sample_workload"
 data_folder = "sample_workload_data"
 central_table = "central_table"
-log_vec_size = 6
+log_vec_size = 6 # Minimum is 6.
 log_block_size = 7
 log_mem_space = 20 # 1MB
 log_disk_space = 35 # 32GB
-reload = true
+reload = false
 
 [tables]
 [tables.central_table]
@@ -89,7 +89,7 @@ type="double"
 [tables.dimension_table4]
 datafile="dimension_table4.tbl"
 primary=["id"]
-one_to_many=true
+to_many=true
 [[tables.dimension_table4.col]]
 name="id"
 type="bigint"
@@ -104,123 +104,3 @@ type="tinyint"
 name="char_col"
 type="char"
 
-
-
-# Assume all queries are scans or simple joins.
-[queries]
-[queries.scan1]
-type="scan"
-table="central_table"
-projections=["id1", "id2", "int64_col"]
-[[queries.scan1.filters]]
-col="int64_col"
-op="lt"
-vals=["?"]
-
-[queries.scan2]
-type="scan"
-table="dimension_table1"
-projections=["id", "fk", "int16_col", "int32_col"]
-[[queries.scan2.filters]]
-col="int16_col"
-op="ge"
-vals=["?"]
-[[queries.scan2.filters]]
-col="int32_col"
-op="between"
-vals=["5", "8"]
-
-
-[queries.scan3]
-type="scan"
-table="dimension_table2"
-projections=["id", "fk", "text_col", "date_col"]
-[[queries.scan3.filters]]
-col="text_col"
-op="eq"
-vals=['?']
-[[queries.scan3.filters]]
-col="date_col"
-op="between"
-vals=["2000-01-01", "2010-01-01"]
-
-
-
-
-
-[queries.scan4]
-type="scan"
-table="dimension_table3"
-projections=["id", "fk", "float32_col", "float64_col"]
-[[queries.scan4.filters]]
-col="float32_col"
-op="ge"
-vals=['?']
-[[queries.scan4.filters]]
-col="float64_col"
-op="between"
-vals=['?']
-
-
-[queries.join1]
-type="join"
-count=false
-[queries.join1.scan1]
-type="scan"
-table="central_table"
-projections=["id1", "id2", "int64_col"]
-[[queries.join1.scan1.filters]]
-col="int64_col"
-op="lt"
-vals=["?"]
-[queries.join1.scan2]
-type="scan"
-table="dimension_table1"
-projections=["id", "fk", "int16_col", "int32_col"]
-[[queries.join1.scan2.filters]]
-col="int16_col"
-op="ge"
-vals=["?"]
-[[queries.join1.scan2.filters]]
-col="int32_col"
-op="between"
-vals=["5", "8"]
-[queries.join1.scan3]
-type="scan"
-table="dimension_table2"
-projections=["id", "fk", "text_col", "date_col"]
-[[queries.join1.scan3.filters]]
-col="text_col"
-op="eq"
-vals=['?']
-[[queries.join1.scan3.filters]]
-col="date_col"
-op="between"
-vals=["2000-01-01", "2010-01-01"]
-[queries.join1.scan4]
-type="scan"
-table="dimension_table3"
-projections=["id", "fk", "float32_col", "float64_col"]
-[[queries.join1.scan4.filters]]
-col="float32_col"
-op="ge"
-vals=['?']
-[[queries.join1.scan4.filters]]
-col="float64_col"
-op="between"
-vals=['?']
-
-#
-#
-# [queries.scan5]
-# type="scan"
-# table="dimension_table4"
-# projections=["id", "fk", "int8_col", "char_col"]
-# [[queries.scan5.filters]]
-# col="int8_col"
-# op="ge"
-# val=7
-# [[queries.scan5.filters]]
-# col="char_col"
-# op="between"
-# sample=true

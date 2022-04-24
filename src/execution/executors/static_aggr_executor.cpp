@@ -1,29 +1,42 @@
 #include "execution/executors/static_aggr_executor.h"
+#include "storage/filter.h"
+#include "storage/vector.h"
+#include "storage/vector_projection.h"
+#include "execution/vector_ops.h"
 
 namespace smartid {
+StaticAggregateExecutor::StaticAggregateExecutor(StaticAggregateNode *node,
+                                                 std::vector<std::unique_ptr<PlanExecutor>> &&children)
+    : PlanExecutor(std::move(children)), node_(node) {
+  result_filter_ = std::make_unique<Bitmap>();
+  result_filter_->Reset(1);
+}
+
 void StaticAggregateExecutor::Prepare(const VectorProjection *vp) {
   // Create result vectors with the right types.
-  result_filter_.Reset(1, FilterMode::BitmapFull);
-  result_ = std::make_unique<VectorProjection>(&result_filter_);
+  result_ = std::make_unique<VectorProjection>(result_filter_.get());
   for (const auto &agg: node_->GetAggs()) {
     auto[agg_idx, agg_type] = agg;
     std::unique_ptr<Vector> out_vec;
     switch (agg_type) {
       case AggType::COUNT: {
-        out_vec = std::make_unique<Vector>(SqlType::Int64, 1);
-        out_vec->MutableDataAs<int64_t>()[0] = 0.0;
+        out_vec = std::make_unique<Vector>(SqlType::Int64);
+        out_vec->Resize(1);
+        out_vec->MutableDataAs<int64_t>()[0] = 0;
         break;
       }
       case AggType::SUM: {
-        out_vec = std::make_unique<Vector>(SqlType::Float64, 1);
+        out_vec = std::make_unique<Vector>(SqlType::Float64);
+        out_vec->Resize(1);
         out_vec->MutableDataAs<double>()[0] = 0.0;
         break;
       }
       case AggType::MAX:
       case AggType::MIN: {
-        // TODO(Amadou): This should be null.
-        out_vec = std::make_unique<Vector>(vp->VectorAt(agg_idx)->ElemType(), 1);
-        std::memcpy(out_vec->MutableData(), vp->VectorAt(agg_idx)->Data(), out_vec->ElemSize());
+        // Min and Max begin at null.
+        out_vec = std::make_unique<Vector>(vp->VectorAt(agg_idx)->ElemType());
+        out_vec->Resize(1);
+        Bitmap::UnsetBit(out_vec->MutableNullBitmap()->MutableWords(), 0);
         break;
       }
     }
