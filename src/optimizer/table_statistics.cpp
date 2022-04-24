@@ -186,7 +186,7 @@ void ComputeMaxFreq(ExecutionFactory* factory, Table* table, ColumnStats* column
   // Retrieve result
   auto executor = factory->MakeStoredPlanExecutor(sort_node, nullptr);
   std::vector<int64_t> max_freqs;
-  int64_t num_samples = std::max(1000ll, int64_t(column_stats->count_ * 0.01));
+  int64_t num_samples = std::max(int64_t(1000), int64_t(column_stats->count_ * 0.01));
   double sum_freqs{0.0};
   auto reader = [&](const VectorProjection* vp, sel_t i) {
     if (max_freqs.size() >= num_samples) return;

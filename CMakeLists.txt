@@ -119,7 +119,7 @@ include_directories(SYSTEM third_party/tomlplusplus/include)
 # FMT
 include_directories(SYSTEM third_party/fmt/include)
 add_subdirectory(third_party/fmt)
-list(APPEND THIRD_PARTY_LIBS fmt)
+list(APPEND THIRD_PARTY_LIBS fmt-header-only)
 
 if( APPLE )
     set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@3)

@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 #include <unordered_map>
+#include <memory>
 #include "common/settings.h"
 
 // Pre-declare

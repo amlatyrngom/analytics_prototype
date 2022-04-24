@@ -1,6 +1,7 @@
 #pragma once
 
 #include "execution/nodes/plan_node.h"
+#include <memory>
 
 namespace smartid {
 class VectorProjection;

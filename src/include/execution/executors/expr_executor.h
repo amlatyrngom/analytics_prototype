@@ -1,6 +1,7 @@
 #pragma once
 
 #include "execution/nodes/expr_node.h"
+#include <memory>
 
 namespace smartid {
 class Bitmap;

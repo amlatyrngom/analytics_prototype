@@ -79,9 +79,9 @@ double RunBestDefault(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, 10ull);
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
   } else if (first_duration_sec < 10) {
-    total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, 3ull);
+    total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
     total_num_exec = 2;
   }
@@ -132,9 +132,9 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, 10ull);
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
   } else if (first_duration_sec < 10) {
-    total_num_exec = std::min(uint64_t(50 / first_duration_sec) + 1, 5ull);
+    total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
     total_num_exec = 2;
   }
@@ -186,9 +186,9 @@ double RunBestIndexes(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, 10ull);
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
   } else if (first_duration_sec < 10) {
-    total_num_exec = std::min(uint64_t(50 / first_duration_sec) + 1, 5ull);
+    total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
     total_num_exec = 2;
   }
@@ -238,9 +238,9 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, 10ull);
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
   } else if (first_duration_sec < 10) {
-    total_num_exec = std::min(uint64_t(50 / first_duration_sec) + 1, 5ull);
+    total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
     total_num_exec = 2;
   }
