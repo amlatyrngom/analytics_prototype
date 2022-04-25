@@ -17,30 +17,31 @@ default_df = pd.read_csv(default_file, names=cols, index_col=False)
 print(default_df.head())
 
 
-mat_view_file = f"{data_dir}/mat_cost.csv"
-cols = ["opt_name", "num_rows", "extra_size", "query_name", "cost"]
-mat_df = pd.read_csv(mat_view_file, names=cols, index_col=False)
-print(mat_df.head())
+if (sys.argv[1] == "mat_view"):
+    mat_view_file = f"{data_dir}/mat_cost.csv"
+    cols = ["opt_name", "num_rows", "extra_size", "query_name", "cost"]
+    mat_df = pd.read_csv(mat_view_file, names=cols, index_col=False)
+    print(mat_df.head())
 
 
+if (sys.argv[1] == "index"):
+    index_join_file = f"{data_dir}/index_join_cost.csv"
+    cols = ["opt_name", "extra_size", "query_name", "cost_savings"]
+    idx_df = pd.read_csv(index_join_file, names=cols, index_col=False)
+    idx_df = idx_df.groupby(by=['opt_name', 'extra_size']).agg({"cost_savings": "sum"})
+    idx_df.columns = ["cost_savings"]
+    idx_df = idx_df.reset_index()
+    idx_df["cost_savings_over_size"] = idx_df.cost_savings / idx_df.extra_size
+    idx_df = idx_df.sort_values(by='cost_savings_over_size', ascending=False).reset_index(drop=True)
+    print(idx_df.head())
 
-index_join_file = f"{data_dir}/index_join_cost.csv"
-cols = ["opt_name", "extra_size", "query_name", "cost_savings"]
-idx_df = pd.read_csv(index_join_file, names=cols, index_col=False)
-idx_df = idx_df.groupby(by=['opt_name', 'extra_size']).agg({"cost_savings": "sum"})
-idx_df.columns = ["cost_savings"]
-idx_df = idx_df.reset_index()
-idx_df["cost_savings_over_size"] = idx_df.cost_savings / idx_df.extra_size
-idx_df = idx_df.sort_values(by='cost_savings_over_size', ascending=False).reset_index(drop=True)
-print(idx_df.head())
-
-
-table_outs_file = f"{data_dir}/table_outputs.csv"
-filter_sels_file = f"{data_dir}/filter_sels.csv"
-outs_df = pd.read_csv(table_outs_file, names=['query_name', 'table_name', 'table_out', 'base_size'], index_col=False)
-sels_df = pd.read_csv(filter_sels_file, names=['query_name', 'table_name', 'col_name', 'sel', 'base_size'], index_col=False)
-print(outs_df.head())
-print(sels_df.head())
+if (sys.argv[1] == "smartid"):
+    table_outs_file = f"{data_dir}/table_outputs.csv"
+    filter_sels_file = f"{data_dir}/filter_sels.csv"
+    outs_df = pd.read_csv(table_outs_file, names=['query_name', 'table_name', 'table_out', 'base_size'], index_col=False)
+    sels_df = pd.read_csv(filter_sels_file, names=['query_name', 'table_name', 'col_name', 'sel', 'base_size'], index_col=False)
+    print(outs_df.head())
+    print(sels_df.head())
 
 
 def gen_best_indices(size_budget):
@@ -129,21 +130,12 @@ def gen_best_mat_views(size_budget):
     return pd.concat(result)
 
 
-
 def write_results(res, opt_name, budget):
     if not os.path.exists(opt_dir):
         os.makedirs(opt_dir)
     outfile = f"{opt_dir}/{opt_name}_{budget}.csv"
+    print(f"Writing {outfile}")
     res.to_csv(outfile, sep=' ', header=False, index=False)
-
-
-for budget in size_budgets:
-    res = gen_best_indices(budget)
-    write_results(res, "index", budget)
-    write_results(res, "index", f"{budget / (1 << 20)}MB")
-    # res = gen_best_mat_views(budget)
-    # write_results(res, "mat_view", budget)
-    # write_results(res, "mat_view", f"{budget / (1 << 20)}MB")
 
 
 def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
@@ -274,4 +266,18 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
     pass
 
 
-# gen_best_embeddings()
+if sys.argv[1] == "index":
+    for budget in [i*(1<<26) for i in (2, 4, 6, 8, 10)]:
+        res = gen_best_indices(budget)
+        write_results(res, "index", budget)
+        write_results(res, "index", f"{budget / (1 << 20)}MB")
+
+if sys.argv[1] == "mat_view":
+    for budget in [i*(1<<26) for i in range(16, 256+1, 16)]:
+        res = gen_best_mat_views(budget)
+        write_results(res, "mat_view", budget)
+        write_results(res, "mat_view", f"{budget / (1 << 20)}MB")
+
+
+if sys.argv[1] == "smartid":
+    gen_best_embeddings()

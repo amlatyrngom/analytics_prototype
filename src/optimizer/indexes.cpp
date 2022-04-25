@@ -98,6 +98,7 @@ void BuildIndex(Catalog* catalog, const std::string& table_name) {
 void Indexes::BuildAllKeyIndexes(Catalog* catalog) {
   // Read materialized views.
   auto workload = catalog->Workload();
+  if (workload->gen_costs || workload->reload) return;
   std::set<std::string> idxs_to_build;
   bool prev_built = !workload->available_idxs.empty();
   workload->available_idxs.clear();

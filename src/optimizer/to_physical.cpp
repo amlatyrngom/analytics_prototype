@@ -343,7 +343,7 @@ void ToPhysical::ResolveJoins(Catalog *catalog,
 }
 
 
-PlanNode* ToPhysical::MakePhysicalJoin(Catalog* catalog, WorkloadInfo* workload, LogicalJoinNode* logical_join, ExecutionContext* exec_ctx, ExecutionFactory *factory) {
+PlanNode* ToPhysical::MakePhysicalJoin(Catalog* catalog, WorkloadInfo* workload, LogicalJoinNode* logical_join, ExecutionContext* exec_ctx, ExecutionFactory *factory, bool with_sip) {
   ScanNode* physical_right_scan;
   double right_size, left_size;
   {
@@ -395,7 +395,11 @@ PlanNode* ToPhysical::MakePhysicalJoin(Catalog* catalog, WorkloadInfo* workload,
 
   std::vector<uint64_t> build_keys{build_key_idx};
   std::vector<uint64_t> probe_keys{probe_key_idx};
-  return factory->MakeHashJoin(build_side, probe_side, std::move(build_keys), std::move(probe_keys), std::move(join_projs), JoinType::INNER);
+  auto hash_join = factory->MakeHashJoin(build_side, probe_side, std::move(build_keys), std::move(probe_keys), std::move(join_projs), JoinType::INNER);
+  if (with_sip) {
+    hash_join->UseBloomFilter(std::ceil(std::min(left_size, right_size)));
+  }
+  return hash_join;
 }
 
 
@@ -747,6 +751,7 @@ PlanNode* ToPhysical::MakePhysicalPlanWithMat(Catalog* catalog, LogicalJoinNode*
     // Return a regular scan.
     MatScanNode mat_scan_node;
     auto mat_table = catalog->GetTable(mat_view);
+    ASSERT(mat_table != nullptr, "Mat view not found!!");
     mat_scan_node.table = mat_table;
     RecursiveCollectScansForMat(catalog, logical_join, &mat_scan_node, factory, exec_ctx);
     mat_scan_node.projections.resize(logical_join->projections.size());

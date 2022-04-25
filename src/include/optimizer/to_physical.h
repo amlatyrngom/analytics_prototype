@@ -24,7 +24,7 @@ struct ToPhysical {
   static void EstimateScanSelectivities(Catalog* catalog, QueryInfo* query_info);
   static void ResolveJoin(Catalog* catalog, WorkloadInfo* workload, LogicalJoinNode* logical_join, ExecutionFactory* factory);
   static void ResolveJoins(Catalog* catalog, WorkloadInfo* workload, QueryInfo* query_info, ExecutionFactory* factory);
-  static PlanNode* MakePhysicalJoin(Catalog* catalog, WorkloadInfo* workload, LogicalJoinNode* logical_join, ExecutionContext* exec_ctx, ExecutionFactory *factory);
+  static PlanNode* MakePhysicalJoin(Catalog* catalog, WorkloadInfo* workload, LogicalJoinNode* logical_join, ExecutionContext* exec_ctx, ExecutionFactory *factory, bool with_sip=false);
   static void EstimateJoinCardinalities(Catalog* catalog, WorkloadInfo* workload_info, QueryInfo* query_info, FreqType freq_type);
   static void FindBestJoinOrder(QueryInfo* query_info);
   static void FindBestJoinOrders(Catalog* catalog, ExecutionFactory* execution_factory, FreqType freq_type);

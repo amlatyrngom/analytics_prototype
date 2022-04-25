@@ -47,13 +47,13 @@ void InitSmartIDs(Catalog* catalog) {
   SmartIDOptimizer::BuildSmartIDs(catalog);
 }
 
-double RunBestDefault(Catalog* catalog, const auto& query_name, std::ostream& os, bool for_benchmark) {
+double RunBestDefault(Catalog* catalog, const auto& query_name, std::ostream& os, bool for_benchmark, bool with_sip) {
   ExecutionFactory execution_factory(catalog);
   auto workload = catalog->Workload();
   ExecutionContext exec_ctx;
   auto query = workload->query_infos.at(query_name).get();
   auto logical_join = query->best_join_order;
-  auto physical_plan = ToPhysical::MakePhysicalJoin(catalog, workload, logical_join, &exec_ctx, &execution_factory);
+  auto physical_plan = ToPhysical::MakePhysicalJoin(catalog, workload, logical_join, &exec_ctx, &execution_factory, with_sip);
   if (query->count) {
     physical_plan = execution_factory.MakeStaticAggregation(physical_plan, {
         {0, AggType::COUNT},
@@ -279,12 +279,13 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
   return {std::move(catalog), std::move(execution_factory)};
 }
 
-void RunDefaultExpt(Catalog* catalog) {
-  auto result_file = fmt::format("{}/default_results.csv", catalog->Workload()->data_folder);
+void RunDefaultExpt(Catalog* catalog, bool with_sip) {
+  auto result_file = fmt::format("{}/default_results{}.csv", catalog->Workload()->data_folder, with_sip ? "_with_sip" : "");
   std::ofstream result_os(result_file);
   for (int i = 1; i <= 70; i++) {
     auto query_name = fmt::format("query{}", i);
-    RunBestDefault(catalog, query_name, result_os, true);
+    fmt::print("Running query {}\n", query_name);
+    RunBestDefault(catalog, query_name, result_os, true, with_sip);
   }
 }
 
@@ -293,9 +294,11 @@ void RunMatViewExpt(Catalog* catalog, int budget) {
   std::ofstream result_os(result_file);
   InitMatView(catalog, budget);
   catalog->Workload()->rebuild = false;
+  fmt::print("Available mat views for budget={}: {}\n", budget, catalog->Workload()->available_mat_views);
   for (int i = 1; i <= 70; i++) {
     auto query_name = fmt::format("query{}", i);
-    RunBestMatView(catalog, query_name, result_os, true);
+    fmt::print("Running query {}\n", query_name);
+    RunBestMatView(catalog, query_name, result_os, false);
   }
 }
 
@@ -307,6 +310,7 @@ void RunIndexExpt(Catalog* catalog, int budget) {
   catalog->Workload()->rebuild = false;
   for (int i = 1; i <= 70; i++) {
     auto query_name = fmt::format("query{}", i);
+    fmt::print("Running query {}\n", query_name);
     RunBestIndexes(catalog, query_name, result_os, true);
   }
 }
@@ -318,6 +322,7 @@ void RunSmartIDsExpt(Catalog* catalog) {
   catalog->Workload()->rebuild = false;
   for (int i = 1; i <= 70; i++) {
     auto query_name = fmt::format("query{}", i);
+    fmt::print("Running query {}\n", query_name);
     RunBestSmartID(catalog, query_name, result_os, true);
   }
 }
@@ -327,32 +332,36 @@ int main() {
   auto [catalog, global_factory] = InitCommon();
   auto workload = catalog->Workload();
 
-//  // Default.
-//  {
-//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      RunDefaultExpt(catalog.get());
-//    }
-//  }
-
-  // Mat views.
+  // Default.
   {
-    int budget = workload->budget;
-    InitMatView(catalog.get(), budget);
     if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      RunMatViewExpt(catalog.get(), budget);
+      RunDefaultExpt(catalog.get(), false);
     }
   }
 
-//  // Indexes
+//   Mat views.
 //  {
-//    int budget = workload->budget;
-//    InitIndexes(catalog.get(), budget);
+//    if (workload->rebuild) {
+//      InitMatView(catalog.get(), 16);
+//    }
 //    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      RunIndexExpt(catalog.get(), budget);
+//      for (int budget = 80; budget <= 256; budget += 16) {
+//        RunMatViewExpt(catalog.get(), budget);
+//      }
+//    }
+//  }
+
+  // Indexes
+//  {
+//    for (int budget = 2; budget <= 10; budget += 2) {
+//      InitIndexes(catalog.get(), budget);
+//      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//        RunIndexExpt(catalog.get(), budget);
+//      }
 //    }
 //  }
 //
-//  // SmartIDs
+  // SmartIDs
 //  {
 //    InitSmartIDs(catalog.get());
 //    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {

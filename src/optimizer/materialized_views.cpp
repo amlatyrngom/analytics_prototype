@@ -177,15 +177,15 @@ void MaterializedViews::BuildAllValuableMatViews(Catalog *catalog) {
   auto workload = catalog->Workload();
   std::set<std::string> mat_views_to_build;
   workload->available_mat_views.clear();
-  for (uint64_t i = 0; i < 64; i++) {
-    uint64_t budget = (i + 1)* (1ull << 26);
+  for (uint64_t i = 16; i <= 256; i += 16) {
+    uint64_t budget = i * (1ull << 26);
     std::string mat_view_names_file(fmt::format("{}/opts/mat_view_{}.csv", workload->data_folder, budget));
     std::ifstream is(mat_view_names_file);
     std::vector<std::string> mat_view_names;
     std::string mat_view_name;
     while ((is >> mat_view_name)) {
       mat_views_to_build.emplace(mat_view_name);
-      if ((i+1) == workload->budget) {
+      if (i == workload->budget) {
         workload->available_mat_views.emplace(mat_view_name);
       }
     }

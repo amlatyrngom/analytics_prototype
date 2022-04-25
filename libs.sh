@@ -37,4 +37,8 @@ cd cmake-release
 CC=clang-11 CXX=clang++-11 cmake .. -DCMAKE_BUILD_TYPE=Release
 cd ..
 
+# Python stuff
+sudo apt install -y python3-pip
+pip3 install pandas numpy
+
 

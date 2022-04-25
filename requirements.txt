@@ -1,0 +1,7 @@
+jupyterlab
+matplotlib
+pandas
+seaborn
+altair
+vega
+notebook
