@@ -42,7 +42,7 @@ std::string ParseIdxName(const std::string& idx_name) {
   return suffix;
 }
 
-void BuildIndex(Catalog* catalog, const std::string& table_name) {
+double BuildIndex(Catalog* catalog, const std::string& table_name) {
 //  if (table_name != "title" && table_name != "movie_info_idx") return;
   auto table = catalog->GetTable(table_name);
   ExecutionFactory factory(catalog);
@@ -82,6 +82,7 @@ void BuildIndex(Catalog* catalog, const std::string& table_name) {
   auto row_id_idx = std::make_unique<RowIDIndex>();
   auto& index = *row_id_idx->GetIndex();
   const VectorProjection* vp;
+  auto start = std::chrono::high_resolution_clock::now();
   while ((vp = scan_executor->Next()) != nullptr) {
     auto key_data = vp->VectorAt(0)->DataAs<int64_t>();
     auto rowid_data = vp->VectorAt(1)->DataAs<int64_t>();
@@ -90,9 +91,12 @@ void BuildIndex(Catalog* catalog, const std::string& table_name) {
     });
   }
   catalog->AddIndex(table_name, std::move(row_id_idx));
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
   // Index Content.
-  fmt::print("Index {} content: \n", table_name);
+  fmt::print("Index {} content for debugging: \n", table_name);
   catalog->GetIndex(table_name)->PrinTop(10);
+  return double(duration) / double(1e9);
 }
 
 void Indexes::BuildAllKeyIndexes(Catalog* catalog) {
@@ -114,8 +118,11 @@ void Indexes::BuildAllKeyIndexes(Catalog* catalog) {
   }
 
   if (prev_built) return; // Do not rebuild indexes.
+  std::string index_build_times(fmt::format("{}/index_build_times.csv", workload->data_folder));
+  std::ofstream os(index_build_times);
   for (const auto& [table_name, _]: workload->table_infos) {
-    BuildIndex(catalog, table_name);
+    double duration = BuildIndex(catalog, table_name);
+    os << fmt::format("{},{}\n", table_name, duration);
   }
 }
 

@@ -9,7 +9,7 @@ log_mem_space = 34 # 16GB
 log_disk_space = 36 # 64GB
 reload = false # For reloading data.
 gen_costs = false # For generating optimization costs.
-rebuild = false # For rebuilding mat_views, indexes or smartids.
+rebuild = true # For rebuilding mat_views, indexes or smartids.
 budget=64 # In multiples of 64MB from 0 to 64.
 
 [tables]

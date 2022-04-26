@@ -223,6 +223,7 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
         # print(effectiveness_df[effectiveness_df.query_name == 'query28'])
     # First remove columns that would not be very useful.
     res_df = pd.concat(res).sort_values(['to_table', 'effectiveness'], ascending=[True, False]).reset_index(drop=True)
+    res_df.effectiveness = np.sqrt(res_df.effectiveness)
     eff_sum = res_df.groupby(by='to_table').agg({'effectiveness': 'sum'})
     eff_sum.columns = ['effectiveness_sum']
     eff_sum = eff_sum.reset_index()
@@ -230,7 +231,9 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
     res_eff_df['effectiveness_ratio'] = res_eff_df.effectiveness / res_eff_df.effectiveness_sum
     print("First DF")
     print(res_eff_df)
-    res_eff_df = res_eff_df[res_eff_df.effectiveness_ratio > (float(min_num_bits)/num_free_bits)]
+    res_eff_df = res_eff_df[res_eff_df.effectiveness_ratio > (2/num_free_bits)]
+    print("First DF AFTER ratio")
+    print(res_eff_df)
     # Now allocate bits
     eff_sum = res_eff_df.groupby(by='to_table').agg({'effectiveness': 'sum'})
     eff_sum.columns = ['effectiveness_sum']
@@ -238,6 +241,7 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
     res_eff_df = pd.merge(res_eff_df[['from_table', 'from_col', 'to_table', 'effectiveness']], eff_sum, on='to_table')
     res_eff_df['effectiveness_ratio'] = res_eff_df.effectiveness / res_eff_df.effectiveness_sum
     res_eff_df['num_bits'] = (res_eff_df['effectiveness_ratio'] * num_free_bits).astype(np.int32)
+
     # Some tables won't have all bits allocated due to
     # floating point rounding down. Give remaining bits to top embeddings.
     total_num_bits = {}
@@ -273,11 +277,12 @@ if sys.argv[1] == "index":
         write_results(res, "index", f"{budget / (1 << 20)}MB")
 
 if sys.argv[1] == "mat_view":
-    for budget in [i*(1<<26) for i in range(16, 256+1, 16)]:
+    for budget in [i*(1<<26) for i in [2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128]]:
         res = gen_best_mat_views(budget)
         write_results(res, "mat_view", budget)
         write_results(res, "mat_view", f"{budget / (1 << 20)}MB")
 
 
 if sys.argv[1] == "smartid":
-    gen_best_embeddings()
+    gen_best_embeddings(num_free_bits=10, min_num_bits=2, total_id_size=32)
+    # gen_best_embeddings()

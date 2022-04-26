@@ -525,7 +525,7 @@ void ToPhysical::FindBestJoinOrders(Catalog *catalog, ExecutionFactory* executio
 }
 
 
-void ToPhysical::MakeMaterializedView(Catalog *catalog, QueryInfo *query_info) {
+double ToPhysical::MakeMaterializedView(Catalog *catalog, QueryInfo *query_info) {
   if (catalog->GetTable(query_info->name) != nullptr) {
     fmt::print("View {} already exists!\n", query_info->name);
 //    return;
@@ -560,6 +560,7 @@ void ToPhysical::MakeMaterializedView(Catalog *catalog, QueryInfo *query_info) {
   uint64_t block_size = Settings::Instance()->BlockSize();
   std::unique_ptr<TableBlock> table_block = nullptr;
   const VectorProjection* vp;
+  auto start = std::chrono::high_resolution_clock::now();
 
   uint64_t total_write_size = 0;
   while ((vp = executor->Next())) {
@@ -650,6 +651,9 @@ void ToPhysical::MakeMaterializedView(Catalog *catalog, QueryInfo *query_info) {
     mat_view_table->InsertTableBlock(std::move(table_block));
   }
 
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
+
 
   {
     std::vector<uint64_t> cols_to_read{0, 1, 2, 3, 4};
@@ -678,6 +682,7 @@ void ToPhysical::MakeMaterializedView(Catalog *catalog, QueryInfo *query_info) {
   {
     std::cout << "TOTAL WRITE SIZE: " << total_write_size << std::endl;
   }
+  return double(duration) / double(1e9);
 }
 
 struct MatScanNode {

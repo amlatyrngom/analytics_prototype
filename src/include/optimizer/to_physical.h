@@ -28,7 +28,7 @@ struct ToPhysical {
   static void EstimateJoinCardinalities(Catalog* catalog, WorkloadInfo* workload_info, QueryInfo* query_info, FreqType freq_type);
   static void FindBestJoinOrder(QueryInfo* query_info);
   static void FindBestJoinOrders(Catalog* catalog, ExecutionFactory* execution_factory, FreqType freq_type);
-  static void MakeMaterializedView(Catalog* catalog, QueryInfo* query_info);
+  static double MakeMaterializedView(Catalog* catalog, QueryInfo* query_info);
   static PlanNode* MakePhysicalPlanWithMat(Catalog* catalog, LogicalJoinNode* logical_join, const std::string& mat_view, ExecutionFactory* factory, ExecutionContext* exec_ctx);
   static PlanNode* MakePhysicalPlanWithIndexes(Catalog* catalog, LogicalJoinNode* logical_join, const std::unordered_set<std::string>& indexes_to_use, ExecutionFactory* factory, ExecutionContext* exec_ctx);
   static PlanNode* MakePhysicalPlanWithSmartIDs(Catalog* catalog, LogicalJoinNode* logical_join, const std::unordered_map<std::string, std::pair<uint64_t, int64_t>>& table_embeddings, ExecutionFactory* factory, ExecutionContext* exec_ctx);

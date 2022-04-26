@@ -62,8 +62,16 @@ double RunBestDefault(Catalog* catalog, const auto& query_name, std::ostream& os
   auto printer = execution_factory.MakePrint(physical_plan, {});
   {
     std::cout << "Warming execution" << std::endl;
+    auto warming_start = std::chrono::high_resolution_clock::now();
     auto executor = ExecutionFactory::MakePlanExecutor(printer, &exec_ctx);
     executor->Next();
+    auto warming_stop = std::chrono::high_resolution_clock::now();
+    auto warming_duration = duration_cast<std::chrono::nanoseconds>(warming_stop - warming_start).count();
+    auto warming_duration_sec = double(warming_duration) / double(1e9);
+    if (warming_duration_sec > 50) {
+      os << fmt::format("default,{},{}\n", query_name, warming_duration_sec);
+      return warming_duration_sec; // Special case for query 60. It's too slow.
+    }
   }
   double first_duration_sec;
   {
@@ -115,8 +123,16 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
   auto printer = execution_factory.MakePrint(physical_plan, {});
   {
     std::cout << "Warming execution" << std::endl;
+    auto warming_start = std::chrono::high_resolution_clock::now();
     auto executor = ExecutionFactory::MakePlanExecutor(printer, &exec_ctx);
     executor->Next();
+    auto warming_stop = std::chrono::high_resolution_clock::now();
+    auto warming_duration = duration_cast<std::chrono::nanoseconds>(warming_stop - warming_start).count();
+    auto warming_duration_sec = double(warming_duration) / double(1e9);
+    if (warming_duration_sec > 50) {
+      os << fmt::format("mat_view,{},{},{}\n", query_name, workload->budget, warming_duration_sec);
+      return warming_duration_sec; // Special case for query 60. It's too slow.
+    }
   }
   double first_duration_sec;
   {
@@ -169,8 +185,16 @@ double RunBestIndexes(Catalog* catalog, const auto& query_name, std::ostream& os
   auto printer = execution_factory.MakePrint(physical_plan, {});
   {
     std::cout << "Warming execution" << std::endl;
+    auto warming_start = std::chrono::high_resolution_clock::now();
     auto executor = ExecutionFactory::MakePlanExecutor(printer, &exec_ctx);
     executor->Next();
+    auto warming_stop = std::chrono::high_resolution_clock::now();
+    auto warming_duration = duration_cast<std::chrono::nanoseconds>(warming_stop - warming_start).count();
+    auto warming_duration_sec = double(warming_duration) / double(1e9);
+    if (warming_duration_sec > 50) {
+      os << fmt::format("index,{},{},{}\n", query_name, workload->budget, warming_duration_sec);
+      return warming_duration_sec; // Special case for query 60. It's too slow.
+    }
   }
   double first_duration_sec;
   {
@@ -221,8 +245,16 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
   auto printer = execution_factory.MakePrint(physical_plan, {});
   {
     std::cout << "Warming execution" << std::endl;
+    auto warming_start = std::chrono::high_resolution_clock::now();
     auto executor = ExecutionFactory::MakePlanExecutor(printer, &exec_ctx);
     executor->Next();
+    auto warming_stop = std::chrono::high_resolution_clock::now();
+    auto warming_duration = duration_cast<std::chrono::nanoseconds>(warming_stop - warming_start).count();
+    auto warming_duration_sec = double(warming_duration) / double(1e9);
+    if (warming_duration_sec > 50) {
+      os << fmt::format("smartid,{},{}\n", query_name, warming_duration_sec);
+      return warming_duration_sec; // Special case for query 60. It's too slow.
+    }
   }
   double first_duration_sec;
   {
@@ -254,7 +286,7 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
     auto duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
     duration_sum += double(duration) / double(1e9);
   }
-  os << fmt::format("smartid,{},{},{}\n", query_name, workload->budget, duration_sum / double(total_num_exec));
+  os << fmt::format("smartid,{},{}\n", query_name, duration_sum / double(total_num_exec));
   return duration_sum / double(total_num_exec);
 }
 
@@ -295,10 +327,16 @@ void RunMatViewExpt(Catalog* catalog, int budget) {
   InitMatView(catalog, budget);
   catalog->Workload()->rebuild = false;
   fmt::print("Available mat views for budget={}: {}\n", budget, catalog->Workload()->available_mat_views);
+  for (const auto& mat_view_name: catalog->Workload()->available_mat_views) {
+    if (catalog->GetTable(mat_view_name) == nullptr) {
+      std::cerr << "Mat view not found: " << mat_view_name << std::endl;
+      std::terminate();
+    }
+  }
   for (int i = 1; i <= 70; i++) {
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
-    RunBestMatView(catalog, query_name, result_os, false);
+    RunBestMatView(catalog, query_name, result_os, true);
   }
 }
 
@@ -333,23 +371,23 @@ int main() {
   auto workload = catalog->Workload();
 
   // Default.
-  {
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      RunDefaultExpt(catalog.get(), false);
-    }
-  }
-
-//   Mat views.
 //  {
-//    if (workload->rebuild) {
-//      InitMatView(catalog.get(), 16);
-//    }
 //    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      for (int budget = 80; budget <= 256; budget += 16) {
-//        RunMatViewExpt(catalog.get(), budget);
-//      }
+//      RunDefaultExpt(catalog.get(), false);
 //    }
 //  }
+
+//   Mat views.
+  {
+    if (workload->rebuild) {
+      InitMatView(catalog.get(), 16);
+    }
+    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+      for (int budget: {2, 4, 6, 8}) {
+        RunMatViewExpt(catalog.get(), budget);
+      }
+    }
+  }
 
   // Indexes
 //  {

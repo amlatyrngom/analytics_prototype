@@ -177,7 +177,8 @@ void MaterializedViews::BuildAllValuableMatViews(Catalog *catalog) {
   auto workload = catalog->Workload();
   std::set<std::string> mat_views_to_build;
   workload->available_mat_views.clear();
-  for (uint64_t i = 16; i <= 256; i += 16) {
+  std::vector<uint64_t> possible_budgets{2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128};
+  for (const auto& i: possible_budgets) {
     uint64_t budget = i * (1ull << 26);
     std::string mat_view_names_file(fmt::format("{}/opts/mat_view_{}.csv", workload->data_folder, budget));
     std::ifstream is(mat_view_names_file);
@@ -194,6 +195,8 @@ void MaterializedViews::BuildAllValuableMatViews(Catalog *catalog) {
   std::string mat_views_toml_file(fmt::format("{}/mat_views.toml", workload->data_folder));
   ExecutionFactory factory(catalog);
   QueryReader::ReadWorkloadQueries(catalog, workload, &factory, {mat_views_toml_file});
+  std::string mat_view_build_times(fmt::format("{}/mat_views_build_times.csv", workload->data_folder));
+  std::ofstream os(mat_view_build_times);
   for (auto& [query_name, query_info]: workload->query_infos) {
     if (mat_views_to_build.contains(query_name)) {
       ToPhysical::EstimateScanSelectivities(catalog, query_info.get());
@@ -201,7 +204,9 @@ void MaterializedViews::BuildAllValuableMatViews(Catalog *catalog) {
       ToPhysical::FindBestJoinOrder(query_info.get());
       std::cout << "Found: " << query_info->name << std::endl;
       query_info->best_join_order->ToString(std::cout);
-      ToPhysical::MakeMaterializedView(catalog, query_info.get());
+
+      double duration = ToPhysical::MakeMaterializedView(catalog, query_info.get());
+      os << fmt::format("{},{}\n", query_name, duration);
     }
   }
 }

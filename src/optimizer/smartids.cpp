@@ -215,8 +215,6 @@ void BuildSmartID(Catalog* catalog, SmartIDInfo* smartid_info, PlanNode* plan_no
     }
     to_table->BM()->Unpin(block_info, true);
   }
-//  std::terminate();
-
 }
 
 
@@ -270,15 +268,25 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
   }
 
   if (!workload->rebuild) return;
+  std::string smartids_build_times(fmt::format("{}/smartids_build_times.csv", workload->data_folder));
+  std::ofstream os(smartids_build_times);
+
+  auto start = std::chrono::high_resolution_clock::now();
   if (workload->available_idxs.empty()) {
     // Rebuild indexes to speedup updates.
     Indexes::BuildAllKeyIndexes(catalog);
   }
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
+  auto duration_sec = double(duration) / double(1e9);
+  os << fmt::format("{},{},{}\n", "smartids", "index", duration_sec);
+
 
   // Read smart id query to see how to join any pair of tables.
   std::string mat_views_toml_file(fmt::format("{}/smartid_queries.toml", workload->data_folder));
   ExecutionFactory factory(catalog);
   QueryReader::ReadWorkloadQueries(catalog, workload, &factory, {mat_views_toml_file});
+  start = std::chrono::high_resolution_clock::now();
   for (auto& smartid_info: workload->smartid_infos) {
     ExecutionFactory execution_factory(catalog);
     ExecutionContext exec_ctx;
@@ -329,19 +337,20 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
     std::cout << "Key Col Idx: " << key_col_proj_idx << std::endl;
     BuildSmartID(catalog, smartid_info.get(), physical_query, from_col_proj_idx, key_col_proj_idx);
   }
+  stop = std::chrono::high_resolution_clock::now();
+  duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
+  duration_sec = double(duration) / double(1e9);
+  os << fmt::format("{},{},{}\n", "smartids", "embeddings", duration_sec);
 }
 
 int64_t MakeEmbedding(Catalog* catalog, LogicalScanNode* logical_scan, SmartIDInfo* smartid_info) {
   auto from_hist = catalog->GetTable(smartid_info->from_table_name)->GetStatistics()->column_stats.at(smartid_info->from_col_idx)->hist_.get();
   uint64_t ones = ~(0ull);
-  uint64_t lo_offset = smartid_info->bit_offset;
-  uint64_t hi_offset = lo_offset + smartid_info->num_bits;
-  uint64_t lo_mask = ~(ones << lo_offset);
-  uint64_t hi_mask = hi_offset == 64 ? ones : ~(ones << hi_offset);
-  uint64_t curr_embedding = (hi_mask ^ lo_mask);
+  uint64_t curr_embedding = 0;
   for (const auto& filter: logical_scan->filters) {
     Vector vec(filter.col_type);
     Vector offsets(SqlType::Int64);
+    uint64_t lo_offset, hi_offset;
     if (filter.expr_type == ExprType::Between) {
       // Assumes values already bound.
       vec.Resize(2);
@@ -388,9 +397,10 @@ int64_t MakeEmbedding(Catalog* catalog, LogicalScanNode* logical_scan, SmartIDIn
     } else {
       ASSERT(false, "Comp type not yet supported!!");
     }
-    lo_mask = ~(ones << lo_offset);
-    hi_mask = hi_offset == 64 ? ones : ~(ones << hi_offset);
-    curr_embedding &= (hi_mask ^ lo_mask);
+
+    uint64_t lo_mask = ~(ones << lo_offset);
+    uint64_t hi_mask = hi_offset == 64 ? ones : ~(ones << hi_offset);
+    curr_embedding |= (hi_mask ^ lo_mask);
   }
   return curr_embedding;
 }
