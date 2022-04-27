@@ -1,0 +1,2587 @@
+[queries.query1]
+type = "join"
+count = true
+
+[queries.query2]
+type = "join"
+count = true
+
+[queries.query3]
+type = "join"
+count = true
+
+[queries.query4]
+type = "join"
+count = true
+
+[queries.query5]
+type = "join"
+count = true
+
+[queries.query6]
+type = "join"
+count = true
+
+[queries.query7]
+type = "join"
+count = true
+
+[queries.query8]
+type = "join"
+count = true
+
+[queries.query9]
+type = "join"
+count = true
+
+[queries.query10]
+type = "join"
+count = true
+
+[queries.query11]
+type = "join"
+count = true
+
+[queries.query12]
+type = "join"
+count = true
+
+[queries.query13]
+type = "join"
+count = true
+
+[queries.query14]
+type = "join"
+count = true
+
+[queries.query15]
+type = "join"
+count = true
+
+[queries.query16]
+type = "join"
+count = true
+
+[queries.query17]
+type = "join"
+count = true
+
+[queries.query18]
+type = "join"
+count = true
+
+[queries.query19]
+type = "join"
+count = true
+
+[queries.query20]
+type = "join"
+count = true
+
+[queries.query21]
+type = "join"
+count = true
+
+[queries.query22]
+type = "join"
+count = true
+
+[queries.query23]
+type = "join"
+count = true
+
+[queries.query24]
+type = "join"
+count = true
+
+[queries.query25]
+type = "join"
+count = true
+
+[queries.query26]
+type = "join"
+count = true
+
+[queries.query27]
+type = "join"
+count = true
+
+[queries.query28]
+type = "join"
+count = true
+
+[queries.query29]
+type = "join"
+count = true
+
+[queries.query30]
+type = "join"
+count = true
+
+[queries.query31]
+type = "join"
+count = true
+
+[queries.query32]
+type = "join"
+count = true
+
+[queries.query33]
+type = "join"
+count = true
+
+[queries.query34]
+type = "join"
+count = true
+
+[queries.query35]
+type = "join"
+count = true
+
+[queries.query36]
+type = "join"
+count = true
+
+[queries.query37]
+type = "join"
+count = true
+
+[queries.query38]
+type = "join"
+count = true
+
+[queries.query39]
+type = "join"
+count = true
+
+[queries.query40]
+type = "join"
+count = true
+
+[queries.query41]
+type = "join"
+count = true
+
+[queries.query42]
+type = "join"
+count = true
+
+[queries.query43]
+type = "join"
+count = true
+
+[queries.query44]
+type = "join"
+count = true
+
+[queries.query45]
+type = "join"
+count = true
+
+[queries.query46]
+type = "join"
+count = true
+
+[queries.query47]
+type = "join"
+count = true
+
+[queries.query48]
+type = "join"
+count = true
+
+[queries.query49]
+type = "join"
+count = true
+
+[queries.query50]
+type = "join"
+count = true
+
+[queries.query51]
+type = "join"
+count = true
+
+[queries.query52]
+type = "join"
+count = true
+
+[queries.query53]
+type = "join"
+count = true
+
+[queries.query54]
+type = "join"
+count = true
+
+[queries.query55]
+type = "join"
+count = true
+
+[queries.query56]
+type = "join"
+count = true
+
+[queries.query57]
+type = "join"
+count = true
+
+[queries.query58]
+type = "join"
+count = true
+
+[queries.query59]
+type = "join"
+count = true
+
+[queries.query60]
+type = "join"
+count = true
+
+[queries.query61]
+type = "join"
+count = true
+
+[queries.query62]
+type = "join"
+count = true
+
+[queries.query63]
+type = "join"
+count = true
+
+[queries.query64]
+type = "join"
+count = true
+
+[queries.query65]
+type = "join"
+count = true
+
+[queries.query66]
+type = "join"
+count = true
+
+[queries.query67]
+type = "join"
+count = true
+
+[queries.query68]
+type = "join"
+count = true
+
+[queries.query69]
+type = "join"
+count = true
+
+[queries.query70]
+type = "join"
+count = true
+
+[queries.query1.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query1.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query1.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query1.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "112"
+
+[queries.query1.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query2.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query2.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query2.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query2.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "113"
+
+[queries.query2.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query2.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2005", "2010",]
+
+[queries.query3.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query3.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query3.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query3.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "112"
+
+[queries.query3.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query3.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query4.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query4.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query4.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query4.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "113"
+
+[queries.query4.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query4.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query5.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query5.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query5.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "117"
+
+[queries.query5.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query6.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query6.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[queries.query6.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query6.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query7.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query7.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query7.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query7.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query8.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query8.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1990"
+
+[queries.query8.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query8.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query9.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query9.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[queries.query9.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query9.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query9.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query10.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query10.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query10.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query10.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query10.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query11.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query11.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1990"
+
+[queries.query11.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query11.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query11.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query12.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query12.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[queries.query12.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query12.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query12.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query13.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query13.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query13.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query13.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query13.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query14.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query14.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1990"
+
+[queries.query14.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query14.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query14.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query15.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query15.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "8200"
+
+[queries.query15.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query15.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query15.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query16.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query16.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query16.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2014"
+
+[queries.query16.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query17.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query17.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "8200"
+
+[queries.query17.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query17.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2014"
+
+[queries.query17.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query18.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query18.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "8200"
+
+[queries.query18.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query18.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query18.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query19.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query19.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query19.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query19.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query20.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query20.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query20.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "1980", "1995",]
+
+[queries.query21.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query21.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query21.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "1980", "1984",]
+
+[queries.query22.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query22.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query22.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "1980", "2010",]
+
+[queries.query23.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query23.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query23.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query23.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query24.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query24.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "4"
+
+[queries.query24.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query24.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query25.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query25.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "7"
+
+[queries.query25.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query25.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query26.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query26.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query26.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query26.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2005", "2015",]
+
+[queries.query26.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query27.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query27.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query27.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query27.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2007", "2010",]
+
+[queries.query27.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query28.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query28.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[queries.query28.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query28.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "1"
+
+[queries.query28.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query29.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query29.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query29.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query29.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "1"
+
+[queries.query29.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query30.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query30.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1990"
+
+[queries.query30.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query30.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query31.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query31.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "1950", "2000",]
+
+[queries.query31.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query31.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "398"
+
+[queries.query31.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query31.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query32.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query32.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query32.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "398"
+
+[queries.query32.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query32.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query33.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query33.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1950"
+
+[queries.query33.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query33.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query34.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query34.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2005", "2008",]
+
+[queries.query34.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query34.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query34.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query34.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query34.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query34.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query35.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query35.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query35.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "113"
+
+[queries.query35.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query35.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "105"
+
+[queries.query35.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query36.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query36.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2000", "2010",]
+
+[queries.query36.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query36.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query36.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query36.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query36.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query36.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query37.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "kind_id",]
+projections = []
+[[queries.query37.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query37.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query37.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query37.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query37.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query37.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query37.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query38.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year", "kind_id",]
+projections = []
+[[queries.query38.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[[queries.query38.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query38.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query38.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query38.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query38.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query38.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query39.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "kind_id",]
+projections = []
+[[queries.query39.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query39.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query39.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query39.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query39.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query39.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query40.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query40.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[queries.query40.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query40.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query40.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query40.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query40.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query41.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query41.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query41.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query41.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query41.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query41.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query42.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query42.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2005", "2010",]
+
+[queries.query42.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query42.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query42.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query42.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query43.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query43.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1990"
+
+[queries.query43.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query43.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query43.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query43.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query44.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query44.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query44.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "117"
+
+[queries.query44.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query44.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query45.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query45.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query45.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "105"
+
+[queries.query45.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query45.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "100"
+
+[queries.query45.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query46.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query46.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2008", "2014",]
+
+[queries.query46.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query46.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query46.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query46.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query46.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query47.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query47.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query47.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query47.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query47.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "100"
+
+[queries.query47.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query48.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query48.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2005", "2009",]
+
+[queries.query48.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query48.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query48.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query48.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query48.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query49.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query49.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query49.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query49.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query49.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query49.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query50.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query50.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query50.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query50.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query50.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query50.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query50.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query51.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year", "kind_id",]
+projections = []
+[[queries.query51.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "1950"
+
+[[queries.query51.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query51.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query51.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query52.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year", "kind_id",]
+projections = []
+[[queries.query52.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[[queries.query52.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query52.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query52.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query53.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query53.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "1950", "2000",]
+
+[queries.query53.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query53.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "398"
+
+[queries.query53.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query53.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query53.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query54.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query54.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2000", "2010",]
+
+[queries.query54.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query54.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "398"
+
+[queries.query54.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query54.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query54.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query55.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query55.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "1950", "2010",]
+
+[queries.query55.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query55.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "398"
+
+[queries.query55.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query55.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query55.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query56.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query56.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2008"
+
+[queries.query56.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query56.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query56.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query56.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query56.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query56.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query57.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query57.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2009"
+
+[queries.query57.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query57.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query57.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query57.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query57.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query57.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query58.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query58.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query58.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query58.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query58.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query58.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query58.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query58.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query59.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query59.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query59.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query59.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query59.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query59.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query59.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_id",]
+projections = []
+[[queries.query59.scan_movie_companies.filters]]
+col = "company_id"
+expr = "eq"
+val = "22956"
+
+[queries.query59.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query60.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query60.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query60.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query60.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query60.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query60.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query60.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query60.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query61.scan_title]
+type = "scan"
+table = "title"
+inputs = []
+projections = []
+filters = []
+
+[queries.query61.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query61.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query61.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query61.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "100"
+
+[queries.query61.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query61.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query62.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query62.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2010"
+
+[queries.query62.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query62.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query62.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query62.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "100"
+
+[queries.query62.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query62.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query63.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year", "kind_id",]
+projections = []
+[[queries.query63.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[[queries.query63.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query63.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query63.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query63.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query63.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query64.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year", "kind_id",]
+projections = []
+[[queries.query64.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[[queries.query64.scan_title.filters]]
+col = "kind_id"
+expr = "eq"
+val = "1"
+
+[queries.query64.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query64.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query64.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query64.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query65.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query65.scan_title.filters]]
+col = "production_year"
+expr = "eq"
+val = "1998"
+
+[queries.query65.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query65.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "398"
+
+[queries.query65.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = [ "company_type_id",]
+projections = []
+[[queries.query65.scan_movie_companies.filters]]
+col = "company_type_id"
+expr = "eq"
+val = "2"
+
+[queries.query65.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query66.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query66.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query66.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query66.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query66.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query66.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query66.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query66.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query67.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query67.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2005"
+
+[queries.query67.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query67.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "8"
+
+[queries.query67.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query67.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "101"
+
+[queries.query67.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []
+
+[queries.query67.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query68.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query68.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2000", "2010",]
+
+[queries.query68.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query68.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query68.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query68.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query68.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query68.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "7084"
+
+[queries.query68.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query69.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query69.scan_title.filters]]
+col = "production_year"
+expr = "between"
+left_closed = false
+right_closed = false
+vals = [ "2000", "2005",]
+
+[queries.query69.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = [ "role_id",]
+projections = []
+[[queries.query69.scan_cast_info.filters]]
+col = "role_id"
+expr = "eq"
+val = "2"
+
+[queries.query69.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query69.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "16"
+
+[queries.query69.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = [ "keyword_id",]
+projections = []
+[[queries.query69.scan_movie_keyword.filters]]
+col = "keyword_id"
+expr = "eq"
+val = "7084"
+
+[queries.query69.scan_movie_companies]
+type = "scan"
+table = "movie_companies"
+inputs = []
+projections = []
+filters = []
+
+[queries.query70.scan_title]
+type = "scan"
+table = "title"
+inputs = [ "production_year",]
+projections = []
+[[queries.query70.scan_title.filters]]
+col = "production_year"
+expr = "gt"
+val = "2000"
+
+[queries.query70.scan_movie_info]
+type = "scan"
+table = "movie_info"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query70.scan_movie_info.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "3"
+
+[queries.query70.scan_movie_info_idx]
+type = "scan"
+table = "movie_info_idx"
+inputs = [ "info_type_id",]
+projections = []
+[[queries.query70.scan_movie_info_idx.filters]]
+col = "info_type_id"
+expr = "eq"
+val = "100"
+
+[queries.query70.scan_cast_info]
+type = "scan"
+table = "cast_info"
+inputs = []
+projections = []
+filters = []
+
+[queries.query70.scan_movie_keyword]
+type = "scan"
+table = "movie_keyword"
+inputs = []
+projections = []
+filters = []

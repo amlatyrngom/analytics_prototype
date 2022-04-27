@@ -1,0 +1,193 @@
+# Only with star schemas.
+workload_title = "job_light_full_workload32"
+input_folder = "job_light_full_workload32"
+data_folder = "job_light_full_workload32_data"
+central_table = "title"
+log_vec_size = 11
+log_block_size = 18
+log_mem_space = 34 # 16GB
+log_disk_space = 36 # 64GB
+just_load = true
+reload = true # For reloading data.
+gen_costs = false # For generating optimization costs.
+rebuild = false # For rebuilding mat_views, indexes or smartids.
+budget=64 # In multiples of 64MB from 0 to 64.
+embedding_size=8
+
+[tables.cast_info]
+datafile = "cast_info.csv"
+primary = [ "id",]
+to_many = true
+[[tables.cast_info.col]]
+name = "id"
+type = "int"
+
+[[tables.cast_info.col]]
+name = "person_id"
+type = "int"
+
+[[tables.cast_info.col]]
+name = "movie_id"
+type = "int"
+foreign = "id"
+
+[[tables.cast_info.col]]
+name = "person_role_id"
+type = "int"
+
+[[tables.cast_info.col]]
+name = "note"
+type = "text"
+
+[[tables.cast_info.col]]
+name = "nr_order"
+type = "int"
+
+[[tables.cast_info.col]]
+name = "role_id"
+type = "int"
+
+[tables.movie_companies]
+datafile = "movie_companies.csv"
+primary = [ "id",]
+to_many = true
+[[tables.movie_companies.col]]
+name = "id"
+type = "int"
+
+[[tables.movie_companies.col]]
+name = "movie_id"
+type = "int"
+foreign = "id"
+
+[[tables.movie_companies.col]]
+name = "company_id"
+type = "int"
+
+[[tables.movie_companies.col]]
+name = "company_type_id"
+type = "int"
+
+[[tables.movie_companies.col]]
+name = "note"
+type = "text"
+
+[tables.movie_info_idx]
+datafile = "movie_info_idx.csv"
+primary = [ "id",]
+to_many = true
+[[tables.movie_info_idx.col]]
+name = "id"
+type = "int"
+
+[[tables.movie_info_idx.col]]
+name = "movie_id"
+type = "int"
+foreign = "id"
+
+[[tables.movie_info_idx.col]]
+name = "info_type_id"
+type = "int"
+
+[[tables.movie_info_idx.col]]
+name = "info"
+type = "text"
+
+[[tables.movie_info_idx.col]]
+name = "note"
+type = "text"
+
+[tables.movie_keyword]
+datafile = "movie_keyword.csv"
+primary = [ "id",]
+to_many = true
+[[tables.movie_keyword.col]]
+name = "id"
+type = "int"
+
+[[tables.movie_keyword.col]]
+name = "movie_id"
+type = "int"
+foreign = "id"
+
+[[tables.movie_keyword.col]]
+name = "keyword_id"
+type = "int"
+
+[tables.title]
+datafile = "title.csv"
+primary = [ "id",]
+to_many = false
+[[tables.title.col]]
+name = "id"
+type = "int"
+
+[[tables.title.col]]
+name = "title"
+type = "text"
+
+[[tables.title.col]]
+name = "imdb_index"
+type = "text"
+
+[[tables.title.col]]
+name = "kind_id"
+type = "int"
+
+[[tables.title.col]]
+name = "production_year"
+type = "int"
+
+[[tables.title.col]]
+name = "imdb_id"
+type = "int"
+
+[[tables.title.col]]
+name = "phonetic_code"
+type = "text"
+
+[[tables.title.col]]
+name = "episode_of_id"
+type = "int"
+
+[[tables.title.col]]
+name = "season_nr"
+type = "int"
+
+[[tables.title.col]]
+name = "episode_nr"
+type = "int"
+
+[[tables.title.col]]
+name = "series_years"
+type = "text"
+
+[[tables.title.col]]
+name = "md5sum"
+type = "text"
+
+[tables.movie_info]
+datafile = "movie_info.csv"
+primary = [ "id",]
+to_many = true
+[[tables.movie_info.col]]
+name = "id"
+type = "int"
+
+[[tables.movie_info.col]]
+name = "movie_id"
+type = "int"
+foreign = "id"
+
+[[tables.movie_info.col]]
+name = "info_type_id"
+type = "int"
+
+[[tables.movie_info.col]]
+name = "info"
+type = "text"
+
+[[tables.movie_info.col]]
+name = "note"
+type = "text"
+

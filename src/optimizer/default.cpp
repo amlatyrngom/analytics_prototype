@@ -43,8 +43,10 @@ void Default::GenerateDefaultCosts(Catalog *catalog, std::ostream& os) {
     query_info->best_join_order = best_order;
     std::cout << "Best Order" << std::endl;
     best_order->ToString(std::cout);
-    auto str = fmt::format("{},{},{},{}\n", "default", 0, q_name, best_cost);
-    os << str;
+    if (query_info->for_training) {
+      auto str = fmt::format("{},{},{},{}\n", "default", 0, q_name, best_cost);
+      os << str;
+    }
   }
 }
 

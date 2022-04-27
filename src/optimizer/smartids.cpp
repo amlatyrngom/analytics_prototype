@@ -123,6 +123,7 @@ void SmartIDOptimizer::GatherFilters(Catalog* catalog, std::ostream& table_os, s
   auto workload = catalog->Workload();
   for (const auto& [query_name, query_info]: workload->query_infos) {
     if (!query_info->IsRegularJoin()) continue; // Not a join.
+    if (!query_info->for_training) continue;
     RecursiveGatherFilters(query_name, query_info->best_join_order, table_os, filter_os);
   }
 }
@@ -479,5 +480,12 @@ PlanNode* SmartIDOptimizer::GenerateBestPlanWithSmartIDs(Catalog* catalog, Query
   return ToPhysical::MakePhysicalPlanWithSmartIDs(catalog, logical_join, table_embeddings, factory, exec_ctx);
 }
 
+void SmartIDOptimizer::DoUpdateExpts(Catalog *catalog) {
+  // Run query with
+  // Build Index on A and B.
+  // Update A at ids [lo, hi] to set filter_col = 0.
+  // Update corresponding rows in B.
+  // Should be easy.
+}
 
 }

@@ -150,6 +150,8 @@ void ReadQueries(toml::table& tml, Catalog* catalog, WorkloadInfo* workload, Exe
     auto type = q_tml["type"].value<std::string>().value();
     res->count = q_tml["count"].value_or<bool>(false);
     res->is_mat_view = q_tml["is_mat_view"].value_or<bool>(false);
+    res->for_training = q_tml["for_training"].value_or<bool>(true);
+    res->for_running = q_tml["for_running"].value_or<bool>(true);
     if (type == "scan") {
       ReadScan(q_tml, workload, res.get());
     }
@@ -557,6 +559,7 @@ std::unique_ptr<WorkloadInfo> WorkloadReader::ReadWorkloadInfo(const std::string
   workload_info->log_mem_space = tml["log_mem_space"].value<int>().value();
   workload_info->log_disk_space = tml["log_disk_space"].value<int>().value();
   workload_info->reload = tml["reload"].value_or(false);
+  workload_info->just_load = tml["just_load"].value_or(false);
   if (workload_info->reload) {
     workload_info->gen_costs = false;
   } else {
@@ -650,6 +653,7 @@ void WorkloadReader::ReadWorkloadTables(Catalog *catalog, WorkloadInfo *workload
     throw err;
   }
   LoadData(catalog, workload);
+  if (workload->just_load) return;
   SampleTables(catalog, workload);
 }
 

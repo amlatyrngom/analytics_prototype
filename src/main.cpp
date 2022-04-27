@@ -52,6 +52,7 @@ double RunBestDefault(Catalog* catalog, const auto& query_name, std::ostream& os
   auto workload = catalog->Workload();
   ExecutionContext exec_ctx;
   auto query = workload->query_infos.at(query_name).get();
+  if (!query->for_running) return 0.0;
   auto logical_join = query->best_join_order;
   auto physical_plan = ToPhysical::MakePhysicalJoin(catalog, workload, logical_join, &exec_ctx, &execution_factory, with_sip);
   if (query->count) {
@@ -112,6 +113,7 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
   auto workload = catalog->Workload();
   ExecutionContext exec_ctx;
   auto query = workload->query_infos.at(query_name).get();
+  if (!query->for_running) return 0.0;
   // Force mat view selection.
   Settings::Instance()->SetScanDiscount(0.1);
   auto physical_plan = MaterializedViews::GenBestPlanWithMaterialization(catalog, query, &execution_factory, &exec_ctx);
@@ -129,10 +131,7 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
     auto warming_stop = std::chrono::high_resolution_clock::now();
     auto warming_duration = duration_cast<std::chrono::nanoseconds>(warming_stop - warming_start).count();
     auto warming_duration_sec = double(warming_duration) / double(1e9);
-    if (warming_duration_sec > 50) {
-      os << fmt::format("mat_view,{},{},{}\n", query_name, workload->budget, warming_duration_sec);
-      return warming_duration_sec; // Special case for query 60. It's too slow.
-    }
+    DoNotOptimize(warming_duration_sec);
   }
   double first_duration_sec;
   {
@@ -143,6 +142,10 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
     auto first_stop = std::chrono::high_resolution_clock::now();
     auto first_duration = duration_cast<std::chrono::nanoseconds>(first_stop - first_start).count();
     first_duration_sec = double(first_duration) / double(1e9);
+    if (first_duration_sec > 50) {
+      os << fmt::format("mat_view,{},{},{}\n", query_name, workload->budget, first_duration_sec);
+      return first_duration_sec; // Special case for query 60. It's too slow. For mat view, warming is needed.
+    }
   }
   std::cout << "First Duration: " << first_duration_sec << "s" << std::endl;
   if (!for_benchmark) return first_duration_sec;
@@ -173,6 +176,7 @@ double RunBestIndexes(Catalog* catalog, const auto& query_name, std::ostream& os
   auto workload = catalog->Workload();
   ExecutionContext exec_ctx;
   auto query = workload->query_infos.at(query_name).get();
+  if (!query->for_running) return 0.0;
   // Prevent scans from being too cheap compared to idx lookup.
   Settings::Instance()->SetScanDiscount(0.1);
   Settings::Instance()->SetIdxLookupOverhead(1.01);
@@ -235,6 +239,7 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
   auto workload = catalog->Workload();
   ExecutionContext exec_ctx;
   auto query = workload->query_infos.at(query_name).get();
+  if (!query->for_running) return 0.0;
   // Prevent scans from being too cheap compared to idx lookup.
   auto physical_plan = SmartIDOptimizer::GenerateBestPlanWithSmartIDs(catalog, query, &execution_factory, &exec_ctx);
   if (query->count) {
@@ -292,22 +297,31 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
 
 
 std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommon() {
-//  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
-  auto catalog = std::make_unique<Catalog>("job_light_workload32/workload.toml");
+  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("job_light_workload32/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("job_light_full_workload32/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("job_light_full_workload64/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("sample_workload/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("synthetic_workload/workload.toml");
   auto workload = catalog->Workload();
   WorkloadReader::ReadWorkloadTables(catalog.get(), workload);
+//  if (workload->just_load) {
+//    return {nullptr, nullptr};
+//  }
   TableStatistics::GenerateAllStats(catalog.get(), workload);
 
   // Deal with queries.
   std::vector<std::string> query_files{
 //      "job_light_workload/full.toml",
+      "job_light_workload/training_queries.toml",
+      "job_light_workload/testing_queries.toml",
 //      "job_light_workload/join1.toml",
-      "job_light_workload32/full.toml",
-      "job_light_workload32/join1.toml",
+//      "job_light_workload32/full.toml",
+//      "job_light_workload32/join1.toml",
 //      "sample_workload/test_joins1.toml",
 //      "sample_workload/test_joins2.toml",
 //      "sample_workload/test_joins3.toml",
+//      "synthetic_workload/join1.toml",
   };
   auto execution_factory = std::make_unique<ExecutionFactory>(catalog.get());
   QueryReader::ReadWorkloadQueries(catalog.get(), workload, execution_factory.get(), query_files);
@@ -320,8 +334,8 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 void RunDefaultExpt(Catalog* catalog, bool with_sip) {
   auto result_file = fmt::format("{}/default_results{}.csv", catalog->Workload()->data_folder, with_sip ? "_with_sip" : "");
   std::ofstream result_os(result_file);
-  for (int i = 3; i <= 3; i++) {
-    if (i == 60) continue;
+  for (int i = 4; i <= 100; i += 50) {
+//    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestDefault(catalog, query_name, result_os, true, with_sip);
@@ -340,8 +354,8 @@ void RunMatViewExpt(Catalog* catalog, int budget) {
       std::terminate();
     }
   }
-  for (int i = 1; i <= 70; i++) {
-    if (i == 60) continue;
+  for (int i = 60; i <= 60; i++) {
+//    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestMatView(catalog, query_name, result_os, true);
@@ -355,8 +369,8 @@ void RunIndexExpt(Catalog* catalog, int budget) {
   InitIndexes(catalog, budget);
   fmt::print("Available indexes for budget={}: {}\n", budget, catalog->Workload()->available_idxs);
   catalog->Workload()->rebuild = false;
-  for (int i = 1; i <= 2; i++) {
-    if (i == 60) continue;
+  for (int i = 25; i <= 25; i++) {
+//    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestIndexes(catalog, query_name, result_os, true);
@@ -368,8 +382,8 @@ void RunSmartIDsExpt(Catalog* catalog) {
   std::ofstream result_os(result_file);
   InitSmartIDs(catalog);
   catalog->Workload()->rebuild = false;
-  for (int i = 1; i <= 2; i++) {
-    if (i == 60) continue;
+  for (int i = 4; i <= 100; i += 50) {
+//    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestSmartID(catalog, query_name, result_os, true);
@@ -379,20 +393,11 @@ void RunSmartIDsExpt(Catalog* catalog) {
 int main() {
   // Do not ever let global_factory be freed until the end.
   auto [catalog, global_factory] = InitCommon();
+  if (catalog == nullptr) {
+    std::cout << "Done Just Loading!" << std::endl;
+    return 0;
+  }
   auto workload = catalog->Workload();
-
-//  {
-//    ExecutionFactory factory(catalog.get());
-//    auto table = catalog->GetTable("central_table");
-//    std::vector<uint64_t> cols_to_read{0};
-//    std::vector<ExprNode*> projs;
-//    projs.emplace_back(factory.MakeCol(0));
-//    std::vector<ExprNode*> filters;
-//    auto scan_node = factory.MakeScan(table, std::move(cols_to_read), std::move(projs), std::move(filters));
-//    auto printer = factory.MakePrint(scan_node, {"int32_col", "fk"});
-//    auto tmp_executor = ExecutionFactory::MakePlanExecutor(printer, nullptr);
-//    tmp_executor->Next();
-//  }
 
   // Default.
   {
@@ -402,34 +407,34 @@ int main() {
   }
 
 //   Mat views.
-//  {
-//    if (workload->rebuild) {
-//      InitMatView(catalog.get(), 16);
-//    }
-//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      for (int budget: {2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128}) {
-//        RunMatViewExpt(catalog.get(), budget);
-//      }
-//    }
-//  }
+  {
+    if (workload->rebuild || workload->gen_costs) {
+      InitMatView(catalog.get(), 16);
+    }
+    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+      for (int budget: {2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128}) {
+        RunMatViewExpt(catalog.get(), budget);
+      }
+    }
+  }
 
-//  // Indexes
-//  {
-//    InitIndexes(catalog.get(), 4);
-//    for (int budget = 2; budget <= 10; budget += 2) {
-//      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//        RunIndexExpt(catalog.get(), budget);
-//      }
-//    }
-//  }
+  // Indexes
+  {
+    InitIndexes(catalog.get(), 4);
+    for (int budget = 2; budget <= 10; budget += 2) {
+      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+        RunIndexExpt(catalog.get(), budget);
+      }
+    }
+  }
 //
-  // SmartIDs
-//  {
-//    InitSmartIDs(catalog.get());
-//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      RunSmartIDsExpt(catalog.get());
-//    }
-//  }
+//   SmartIDs
+  {
+    InitSmartIDs(catalog.get());
+    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+      RunSmartIDsExpt(catalog.get());
+    }
+  }
 
   // Indexes
 //  {

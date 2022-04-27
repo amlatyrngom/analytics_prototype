@@ -109,6 +109,7 @@ void MaterializedViews::GenerateMateralizationCosts(Catalog *catalog, std::ostre
   auto workload = catalog->Workload();
   for (const auto& [q_name, query_info]: workload->query_infos) {
     if (!query_info->IsRegularJoin()) continue;
+    if (!query_info->for_training) continue;
     for (const auto& logical_join: query_info->join_orders) {
       RecursiveDematList(res, logical_join);
     }
@@ -120,6 +121,7 @@ void MaterializedViews::GenerateMateralizationCosts(Catalog *catalog, std::ostre
     auto demat_bytes = total_demat_size.second;
     for (const auto& [q_name, query_info]: workload->query_infos) {
       if (!query_info->IsRegularJoin()) continue;
+      if (!query_info->for_training) continue;
       double best_cost = RecursiveEstimateDemat(tables_set, query_info->best_join_order);
 //      double best_cost{std::numeric_limits<double>::max()};
 //      for (const auto& logical_join: query_info->join_orders) {

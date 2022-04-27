@@ -202,6 +202,7 @@ void Indexes::GenerateRowIDIndexCosts(Catalog *catalog, std::ostream &os) {
   for (const auto& [idx_name, idx_size]: index_sizes) {
     for (const auto&[q_name, query_info]: workload->query_infos) {
       if (!query_info->IsRegularJoin()) continue;
+      if (!query_info->for_training) continue;
       double cost_savings = RecursiveIndexSavings(idx_name, query_info->best_join_order);
       auto str = fmt::format("index_{},{},{},{}\n", idx_name, idx_size, q_name, cost_savings);
       os << str;

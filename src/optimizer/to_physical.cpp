@@ -20,6 +20,7 @@
 
 namespace smartid {
 
+unsigned int call_idx = 0;
 std::vector<Value> SampleVals(ColumnStats* column_stats, int num_vals) {
   std::vector<Value> vals;
   uint64_t total_samples = column_stats->value_samples_.size();
@@ -27,7 +28,8 @@ std::vector<Value> SampleVals(ColumnStats* column_stats, int num_vals) {
   // Get random index.
   std::vector<uint64_t> rand_vec;
   for (uint64_t i = 0; i < total_samples; i++) rand_vec.emplace_back(i);
-  std::shuffle(rand_vec.begin(), rand_vec.end(), std::default_random_engine{37});
+  std::shuffle(rand_vec.begin(), rand_vec.end(), std::default_random_engine{call_idx});
+  call_idx++;
   for (int i = 0; i < num_vals; i++) {
      vals.emplace_back(column_stats->value_samples_[rand_vec[i]]);
   }

@@ -7,11 +7,11 @@ log_vec_size = 11
 log_block_size = 18
 log_mem_space = 34 # 16GB
 log_disk_space = 36 # 64GB
-reload = true # For reloading data.
+reload = false # For reloading data.
 gen_costs = false # For generating optimization costs.
 rebuild = false # For rebuilding mat_views, indexes or smartids.
 budget=64 # In multiples of 64MB from 0 to 64.
-embedding_size=16
+embedding_size=8
 
 [tables]
 [tables.title]

@@ -64,6 +64,7 @@ struct WorkloadInfo {
   uint64_t log_block_size;
   uint64_t log_mem_space;
   uint64_t log_disk_space;
+  bool just_load{false};
   bool reload{false};
   bool gen_costs{false};
   bool rebuild{false};

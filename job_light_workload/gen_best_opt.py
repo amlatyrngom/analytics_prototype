@@ -271,6 +271,8 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
     print("Final DF")
     print(res_eff_df)
     res = res_eff_df[['from_table', 'from_col', 'to_table', 'num_bits', 'bit_offset']]
+    if not os.path.exists(opt_dir):
+        os.makedirs(opt_dir)
     outfile = f"{opt_dir}/embeddings_opt_{num_free_bits}.csv"
     res.to_csv(outfile, sep=' ', header=False, index=False)
     pass
@@ -290,5 +292,5 @@ if sys.argv[1] == "mat_view":
 
 
 if sys.argv[1] == "smartid":
-    gen_best_embeddings(num_free_bits=8, min_num_bits=2, total_id_size=32)
-    # gen_best_embeddings()
+    # gen_best_embeddings(num_free_bits=8, min_num_bits=2, total_id_size=32)
+    gen_best_embeddings()

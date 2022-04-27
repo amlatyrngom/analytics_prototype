@@ -99,6 +99,8 @@ struct QueryInfo {
   std::string name;
   bool count{false};
   bool is_mat_view{false};
+  bool for_training{true};
+  bool for_running{true};
   std::vector<LogicalScanNode*> scans;
   std::vector<LogicalJoinNode*> join_orders; // empty when scans.size() == 1;
   LogicalJoinNode* best_join_order{nullptr};

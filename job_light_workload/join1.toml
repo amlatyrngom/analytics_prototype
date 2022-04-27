@@ -2,15 +2,15 @@
 [queries.join1]
 type="join"
 count=true
-[queries.join1.title_scan]
+[queries.join1.A_scan]
 type="scan"
-table="title"
-inputs=["id"]
-projections=["id"]
-# [[queries.join1.title_scan.filters]]
-# col="id"
-# expr = "eq"
-# val="1679302"
+table="A"
+inputs=["filter_col"]
+projections=["filter_col"]
+[[queries.join1.title_scan.filters]]
+col="filter_col"
+expr = "eq"
+vals=["1"] # Updates will set the embedding value to 0.
 
 
 [queries.join1.movie_info_idx_scan]

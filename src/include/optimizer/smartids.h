@@ -16,6 +16,6 @@ struct SmartIDOptimizer {
   static void GenerateCostsForOptimization(Catalog* catalog);
   static void BuildSmartIDs(Catalog* catalog);
   static PlanNode* GenerateBestPlanWithSmartIDs(Catalog* catalog, QueryInfo* query_info, ExecutionFactory* factory, ExecutionContext* exec_ctx);
-  static void UpdateSmartIDs(Catalog* catalog);
+  static void DoUpdateExpts(Catalog* catalog);
 };
 }

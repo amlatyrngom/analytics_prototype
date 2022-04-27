@@ -68,16 +68,16 @@ const VectorProjection *RowIDIndexJoinExecutor::Next() {
     return nullptr;
   }
   if (first_call_) {
-    PrepareLookupSide();
+    PrepareKeySide(vp);
   }
   std::vector<uint64_t> key_side_matches; // Contains indexes in vp.
   std::vector<int64_t> lookup_side_matches; // Contains rowids.
-  LookupByType(vp, node_->IndexTable(), node_->KeyIdx(), lookup_side_types_.at(node_->KeyIdx()), key_side_matches, lookup_side_matches);
+  LookupByType(vp, node_->IndexTable(), node_->KeyIdx(), key_side_types_.at(node_->KeyIdx()), key_side_matches, lookup_side_matches);
   if (key_side_matches.empty()) {
     return Next(); // No matches. Try next vector.
   }
   if (first_call_) {
-    PrepareKeySide(vp);
+    PrepareLookupSide();
   }
 
   // Reset filter.
