@@ -85,11 +85,20 @@ const Vector *InExecutor::Evaluate(const VectorProjection *vp, Bitmap *filter) {
 
 const Vector * EmbeddingCheckExecutor::Evaluate(const VectorProjection *vp, Bitmap *filter) {
   auto child_res = Child(0)->Evaluate(vp, filter);
-  auto child_data = child_res->DataAs<int64_t>();
-  auto mask = node_->Mask();
-  filter->SafeUpdate([&](sel_t i) {
-    return (child_data[i] & mask) != 0;
-  });
+  if (child_res->ElemType() == SqlType::Int64) {
+    auto child_data = child_res->DataAs<int64_t>();
+    auto mask = node_->Mask();
+    filter->SafeUpdate([&](sel_t i) {
+      return (child_data[i] & mask) != 0;
+    });
+  } else {
+    auto child_data = child_res->DataAs<int32_t>();
+    auto mask = static_cast<uint32_t>(node_->Mask());
+    filter->SafeUpdate([&](sel_t i) {
+      return (child_data[i] & mask) != 0;
+    });
+  }
+
   return nullptr;
 }
 

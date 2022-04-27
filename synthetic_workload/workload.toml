@@ -1,8 +1,8 @@
 # Only with star schemas.
-workload_title = "job_light_workload"
-input_folder = "job_light_workload"
-data_folder = "job_light_workload_data"
-central_table = "title"
+workload_title = "synthetic_workload"
+input_folder = "synthetic_workload"
+data_folder = "synthetic_workload_data"
+central_table = "A"
 log_vec_size = 11
 log_block_size = 18
 log_mem_space = 34 # 16GB
@@ -11,36 +11,32 @@ reload = false # For reloading data.
 gen_costs = false # For generating optimization costs.
 rebuild = false # For rebuilding mat_views, indexes or smartids.
 budget=64 # In multiples of 64MB from 0 to 64.
-embedding_size=16
 
 [tables]
-[tables.title]
-datafile="title.csv"
+[tables.A]
+datafile="A.csv"
 primary=["id"]
 [[tables.title.col]]
 name="id"
 type="bigint"
 [[tables.title.col]]
-name="kind_id"
-type="int"
-[[tables.title.col]]
-name="production_year"
+name="col0"
 type="int"
 
 
-[tables.cast_info]
-datafile="cast_info.csv"
+[tables.B]
+datafile="B.csv"
 primary=["id"]
 to_many=true
 [[tables.cast_info.col]]
 name="id"
 type="bigint"
 [[tables.cast_info.col]]
-name="movie_id"
+name="fk"
 type="bigint"
 foreign="id"
 [[tables.cast_info.col]]
-name="role_id"
+name="col0"
 type="int"
 
 [tables.movie_companies]

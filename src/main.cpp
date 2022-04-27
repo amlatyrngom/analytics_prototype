@@ -113,7 +113,7 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
   ExecutionContext exec_ctx;
   auto query = workload->query_infos.at(query_name).get();
   // Force mat view selection.
-  Settings::Instance()->SetScanDiscount(0.01);
+  Settings::Instance()->SetScanDiscount(0.1);
   auto physical_plan = MaterializedViews::GenBestPlanWithMaterialization(catalog, query, &execution_factory, &exec_ctx);
   if (query->count) {
     physical_plan = execution_factory.MakeStaticAggregation(physical_plan, {
@@ -292,16 +292,22 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
 
 
 std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommon() {
-  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
+  auto catalog = std::make_unique<Catalog>("job_light_workload32/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("sample_workload/workload.toml");
   auto workload = catalog->Workload();
   WorkloadReader::ReadWorkloadTables(catalog.get(), workload);
   TableStatistics::GenerateAllStats(catalog.get(), workload);
 
   // Deal with queries.
   std::vector<std::string> query_files{
-      "job_light_workload/full.toml",
-      "job_light_workload/join1.toml",
+//      "job_light_workload/full.toml",
+//      "job_light_workload/join1.toml",
+      "job_light_workload32/full.toml",
+      "job_light_workload32/join1.toml",
 //      "sample_workload/test_joins1.toml",
+//      "sample_workload/test_joins2.toml",
+//      "sample_workload/test_joins3.toml",
   };
   auto execution_factory = std::make_unique<ExecutionFactory>(catalog.get());
   QueryReader::ReadWorkloadQueries(catalog.get(), workload, execution_factory.get(), query_files);
@@ -314,7 +320,8 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 void RunDefaultExpt(Catalog* catalog, bool with_sip) {
   auto result_file = fmt::format("{}/default_results{}.csv", catalog->Workload()->data_folder, with_sip ? "_with_sip" : "");
   std::ofstream result_os(result_file);
-  for (int i = 1; i <= 70; i++) {
+  for (int i = 3; i <= 3; i++) {
+    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestDefault(catalog, query_name, result_os, true, with_sip);
@@ -334,6 +341,7 @@ void RunMatViewExpt(Catalog* catalog, int budget) {
     }
   }
   for (int i = 1; i <= 70; i++) {
+    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestMatView(catalog, query_name, result_os, true);
@@ -345,8 +353,10 @@ void RunIndexExpt(Catalog* catalog, int budget) {
   auto result_file = fmt::format("{}/index_results_{}.csv", catalog->Workload()->data_folder, budget);
   std::ofstream result_os(result_file);
   InitIndexes(catalog, budget);
+  fmt::print("Available indexes for budget={}: {}\n", budget, catalog->Workload()->available_idxs);
   catalog->Workload()->rebuild = false;
-  for (int i = 1; i <= 70; i++) {
+  for (int i = 1; i <= 2; i++) {
+    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestIndexes(catalog, query_name, result_os, true);
@@ -358,7 +368,8 @@ void RunSmartIDsExpt(Catalog* catalog) {
   std::ofstream result_os(result_file);
   InitSmartIDs(catalog);
   catalog->Workload()->rebuild = false;
-  for (int i = 1; i <= 70; i++) {
+  for (int i = 1; i <= 2; i++) {
+    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
     RunBestSmartID(catalog, query_name, result_os, true);
@@ -370,29 +381,42 @@ int main() {
   auto [catalog, global_factory] = InitCommon();
   auto workload = catalog->Workload();
 
-  // Default.
 //  {
-//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      RunDefaultExpt(catalog.get(), false);
-//    }
+//    ExecutionFactory factory(catalog.get());
+//    auto table = catalog->GetTable("central_table");
+//    std::vector<uint64_t> cols_to_read{0};
+//    std::vector<ExprNode*> projs;
+//    projs.emplace_back(factory.MakeCol(0));
+//    std::vector<ExprNode*> filters;
+//    auto scan_node = factory.MakeScan(table, std::move(cols_to_read), std::move(projs), std::move(filters));
+//    auto printer = factory.MakePrint(scan_node, {"int32_col", "fk"});
+//    auto tmp_executor = ExecutionFactory::MakePlanExecutor(printer, nullptr);
+//    tmp_executor->Next();
 //  }
 
-//   Mat views.
+  // Default.
   {
-    if (workload->rebuild) {
-      InitMatView(catalog.get(), 16);
-    }
     if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      for (int budget: {2, 4, 6, 8}) {
-        RunMatViewExpt(catalog.get(), budget);
-      }
+      RunDefaultExpt(catalog.get(), false);
     }
   }
 
-  // Indexes
+//   Mat views.
 //  {
+//    if (workload->rebuild) {
+//      InitMatView(catalog.get(), 16);
+//    }
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      for (int budget: {2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128}) {
+//        RunMatViewExpt(catalog.get(), budget);
+//      }
+//    }
+//  }
+
+//  // Indexes
+//  {
+//    InitIndexes(catalog.get(), 4);
 //    for (int budget = 2; budget <= 10; budget += 2) {
-//      InitIndexes(catalog.get(), budget);
 //      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
 //        RunIndexExpt(catalog.get(), budget);
 //      }

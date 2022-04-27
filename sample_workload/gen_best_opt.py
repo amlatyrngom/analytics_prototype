@@ -9,7 +9,7 @@ import os
 import sys
 
 size_budgets = [(i + 1)*(1 << 26) for i in range(64)]
-data_dir = "job_light_workload_data"
+data_dir = "sample_workload_data"
 default_file = f"{data_dir}/default_cost.csv"
 opt_dir = f"{data_dir}/opts"
 cols = ["opt_name", "extra_size", "query_name", "cost"]
@@ -190,14 +190,16 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
     # Get best embeddings for each table.
     res = []
     num_builds = 0
-    while len(effectiveness_df) > 0 and num_builds < (3 if total_id_size==64 else 2):
+    # while len(effectiveness_df) > 0 and num_builds < (3 if total_id_size==64 else 2):
+    while len(effectiveness_df) > 0:
         num_builds += 1
         tmp_df = effectiveness_df.groupby(by=['from_table', 'from_col', 'to_table']).agg({'effectiveness': 'sum'})
         tmp_df.columns = ['effectiveness']
         tmp_df = tmp_df.reset_index()
         tmp_df = tmp_df.sort_values(['to_table', 'effectiveness'], ascending=[True, False]).reset_index(drop=True)
         # if (curr_build == 0): print(tmp_df)
-        # print(tmp_df)
+        print("AFTER SORTING")
+        print(tmp_df)
         curr_res = []
         # print(effectiveness_df[effectiveness_df.query_name == 'query28'])
         for table_name in tables:
@@ -271,6 +273,8 @@ def gen_best_embeddings(num_free_bits=16, min_num_bits=2, total_id_size=64):
     print("Final DF")
     print(res_eff_df)
     res = res_eff_df[['from_table', 'from_col', 'to_table', 'num_bits', 'bit_offset']]
+    if not os.path.exists(opt_dir):
+        os.makedirs(opt_dir)
     outfile = f"{opt_dir}/embeddings_opt_{num_free_bits}.csv"
     res.to_csv(outfile, sep=' ', header=False, index=False)
     pass

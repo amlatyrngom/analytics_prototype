@@ -50,7 +50,7 @@ void Default::GenerateDefaultCosts(Catalog *catalog, std::ostream& os) {
 
 void Default::GenerateCostsForOptimization(Catalog *catalog) {
   auto workload = catalog->Workload();
-  if (!workload->gen_costs) return;
+//  if (!workload->gen_costs) return;
   {
     std::ofstream os(workload->data_folder + "/default_cost.csv");
     Default::GenerateDefaultCosts(catalog, os);

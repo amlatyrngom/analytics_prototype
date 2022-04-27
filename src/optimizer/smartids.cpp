@@ -14,6 +14,7 @@
 #include "execution/execution_context.h"
 #include "execution/executors/scan_executor.h"
 #include "execution/executors/hash_join_executor.h"
+#include "execution/executors/static_aggr_executor.h"
 #include "execution/executors/plan_executor.h"
 #include <toml++/toml.h>
 #include "storage/table.h"
@@ -71,6 +72,7 @@ void GenSmartIDJoins(Catalog* catalog, std::ostream& toml_os) {
       }
       for (const auto& from_col_idx: from_table_info->used_cols) {
         const auto& from_col_name = from_table_info->schema.GetColumn(from_col_idx).Name();
+        if (from_col_name == key_col_name) continue;
         auto query_tbl = toml::table{};
         auto query_name = fmt::format("smart_id_{}___{}___{}", from_table_name, from_col_name, to_table_name);
         query_tbl.insert("is_mat_view", true); // Mark as mat view.
@@ -145,75 +147,98 @@ void ResetSmartID(Catalog* catalog, SmartIDInfo* smartid_info) {
   for (const auto& block_id: to_table->BlockIDS()) {
     auto block_info = to_table->BM()->Pin(block_id);
     auto raw_table_block = TableBlock::FromBlockInfo(block_info);
-    auto to_col_data = raw_table_block->MutableColDataAs<uint64_t>(smartid_info->to_col_idx);
-    for (uint64_t row_idx = 0; row_idx < block_size; row_idx++) {
-      to_col_data[row_idx] &= 0xFFFFFFFFFFFFull; // 48 ones.
+    if (smartid_info->to_col_type == SqlType::Int64) {
+      auto to_col_data = raw_table_block->MutableColDataAs<uint64_t>(smartid_info->to_col_idx);
+      for (uint64_t row_idx = 0; row_idx < block_size; row_idx++) {
+        to_col_data[row_idx] &= 0xFFFFFFFFFFFFull; // 48 ones.
+      }
+    }
+    if (smartid_info->to_col_type == SqlType::Int32) {
+      auto to_col_data = raw_table_block->MutableColDataAs<uint32_t>(smartid_info->to_col_idx);
+      for (uint64_t row_idx = 0; row_idx < block_size; row_idx++) {
+        to_col_data[row_idx] &= 0xFFFFFF; // 24 ones.
+      }
     }
     to_table->BM()->Unpin(block_info, true);
   }
 }
 
+void LookupByType(const VectorProjection* vp, RowIDIndex* index, SqlType key_type, const char* keys, const int64_t* offsets, std::unordered_map<int64_t, std::vector<std::pair<uint64_t, uint64_t>>>& out) {
+  uint64_t log_block_size = Settings::Instance()->LogBlockSize();
+  uint64_t ones = ~(0ull);
+  uint64_t row_id_mask = ~(ones << log_block_size);
+  if (key_type == SqlType::Int32) {
+    auto typed_keys = reinterpret_cast<const int32_t*>(keys);
+    auto index_table = index->GetIndex32();
+    vp->GetFilter()->Map([&](sel_t i) {
+      auto key = typed_keys[i] & RowIDIndex::KEY_MASK32;
+      auto offset = offsets[i];
+      if (auto it =  index_table->find(key); it != index_table->end()) {
+        for (const auto& row_id: it->second) {
+          auto row_idx = row_id & row_id_mask;
+          auto block_id = row_id >> log_block_size;
+          out[block_id].emplace_back(row_idx, offset);
+        }
+      }
+    });
+  }
+  if (key_type == SqlType::Int64) {
+    auto typed_keys = reinterpret_cast<const int64_t*>(keys);
+    auto index_table = index->GetIndex64();
+    vp->GetFilter()->Map([&](sel_t i) {
+      auto key = typed_keys[i] & RowIDIndex::KEY_MASK64;
+      auto offset = offsets[i];
+      if (auto it =  index_table->find(key); it != index_table->end()) {
+        for (const auto& row_id: it->second) {
+          auto row_idx = row_id & row_id_mask;
+          auto block_id = row_id >> log_block_size;
+          out[block_id].emplace_back(row_idx, offset);
+        }
+      }
+    });
+  }
+}
 
 void BuildSmartID(Catalog* catalog, SmartIDInfo* smartid_info, PlanNode* plan_node, uint64_t from_col_proj_idx, uint64_t key_col_proj_idx) {
 //  if (smartid_info->to_table_name != "movie_info_idx" && smartid_info->to_table_name != "title") return;
   std::cout << "Building SmartID: " << std::endl;
   smartid_info->ToString(std::cout);
-  uint64_t log_block_size = Settings::Instance()->LogBlockSize();
-  uint64_t ones = ~(0ull);
-  uint64_t row_id_mask = ~(ones << log_block_size);
 
   auto to_table = catalog->GetTable(smartid_info->to_table_name);
   auto from_table = catalog->GetTable(smartid_info->from_table_name);
   auto from_col_hist = from_table->GetStatistics()->column_stats.at(smartid_info->from_col_idx)->hist_.get();
   auto executor = ExecutionFactory::MakePlanExecutor(plan_node, nullptr);
-  auto index = catalog->GetIndex(smartid_info->to_table_name)->GetIndex();
   const VectorProjection* vp;
   Vector offsets(SqlType::Int64);
 //  uint64_t num_printed{0};
   std::unordered_map<int64_t, std::vector<std::pair<uint64_t, uint64_t>>> block_row_idx_offset; // Map from block_id to <row_idx, offset>
   while ((vp = executor->Next()) != nullptr) {
-    auto key_col_data = vp->VectorAt(key_col_proj_idx)->DataAs<int64_t>(); // Assumes keys are int64s.
     auto from_vec = vp->VectorAt(from_col_proj_idx);
 //    auto from_col_data = from_vec->DataAs<int32_t>();
     from_col_hist->BitIndices(vp->GetFilter(), from_vec, &offsets, smartid_info->bit_offset, smartid_info->num_bits);
     auto offsets_data = offsets.DataAs<int64_t>();
-    vp->GetFilter()->Map([&](sel_t i) {
-//      auto col_val = from_col_data[i];
-      auto key = key_col_data[i] & 0xFFFFFFFFFFFF;
-      auto offset = offsets_data[i];
-      ASSERT(offset >= 48, "Writing at wrong offset");
-//      bool print_vals{false};
-//      if (num_printed < 10) {
-//        num_printed++;
-//        print_vals = true;
-//        fmt::print("val={}; key={}; offset={}\n", col_val, key, offset);
-//      }
-      if (auto it =  index->find(key); it != index->end()) {
-        for (const auto& row_id: it->second) {
-          auto row_idx = row_id & row_id_mask;
-          auto block_id = row_id >> log_block_size;
-          block_row_idx_offset[block_id].emplace_back(row_idx, offset);
-//          if (print_vals) {
-//            fmt::print("(block_id, row_idx)=({}, {})\n", block_id, row_idx);
-//          }
-        }
-      }
-    });
+    auto index = catalog->GetIndex(smartid_info->to_table_name);
+    LookupByType(vp, index, smartid_info->to_col_type, vp->VectorAt(key_col_proj_idx)->Data(), offsets_data, block_row_idx_offset);
   }
 
 //  num_printed = 0;
   for (const auto& [block_id, row_idx_offsets]: block_row_idx_offset) {
     auto block_info = to_table->BM()->Pin(block_id);
     auto raw_table_block = TableBlock::FromBlockInfo(block_info);
-    auto to_col_data = raw_table_block->MutableColDataAs<uint64_t>(smartid_info->to_col_idx);
-    for (const auto& [row_idx, offset]: row_idx_offsets) {
-//      if (num_printed < 10) {
-//        num_printed++;
-//        fmt::print("Replacing {:x} by {:x} in (block_id, row_idx)=({}, {})\n", to_col_data[row_idx], to_col_data[row_idx] | (1ull << offset), block_id, row_idx);
-//      }
-      to_col_data[row_idx] |= (1ull << offset);
+    if (smartid_info->to_col_type == SqlType::Int32) {
+      auto to_col_data = raw_table_block->MutableColDataAs<uint32_t>(smartid_info->to_col_idx);
+      for (const auto& [row_idx, offset]: row_idx_offsets) {
+        to_col_data[row_idx] |= (1ul << offset);
+      }
     }
-    to_table->BM()->Unpin(block_info, true);
+    if (smartid_info->to_col_type == SqlType::Int64) {
+      auto to_col_data = raw_table_block->MutableColDataAs<uint64_t>(smartid_info->to_col_idx);
+      for (const auto& [row_idx, offset]: row_idx_offsets) {
+        to_col_data[row_idx] |= (1ull << offset);
+      }
+    }
+
+    to_table->BM()->Unpin(block_info, true); // Set to true after debugging
   }
 }
 
@@ -221,7 +246,7 @@ void BuildSmartID(Catalog* catalog, SmartIDInfo* smartid_info, PlanNode* plan_no
 void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
   auto workload = catalog->Workload();
   // Read embedding infos.
-  auto opt_file = fmt::format("{}/opts/embeddings_opt_16.csv", catalog->Workload()->data_folder);
+  auto opt_file = fmt::format("{}/opts/embeddings_opt_{}.csv", workload->data_folder, workload->embedding_size);
   std::ifstream is(opt_file);
   std::string from_table, from_col, to_table;
   uint64_t bit_offset, num_bits;
@@ -252,11 +277,13 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
       if (smartid_info->to_table_name == workload->central_table_name && col.IsPK()) {
         smartid_info->to_col_name = col.Name();
         smartid_info->to_col_idx = col_idx;
+        smartid_info->to_col_type = col.Type();
         break;
       }
       if (smartid_info->to_table_name != workload->central_table_name && col.IsFK()) {
         smartid_info->to_col_name = col.Name();
         smartid_info->to_col_idx = col_idx;
+        smartid_info->to_col_type = col.Type();
         break;
       }
       col_idx++;
@@ -286,6 +313,7 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
   std::string mat_views_toml_file(fmt::format("{}/smartid_queries.toml", workload->data_folder));
   ExecutionFactory factory(catalog);
   QueryReader::ReadWorkloadQueries(catalog, workload, &factory, {mat_views_toml_file});
+  ToPhysical::FindBestJoinOrders(catalog, &factory, FreqType::TOP);
   start = std::chrono::high_resolution_clock::now();
   for (auto& smartid_info: workload->smartid_infos) {
     ExecutionFactory execution_factory(catalog);
@@ -295,7 +323,6 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
 
     auto query_name = fmt::format("smart_id_{}___{}___{}", smartid_info->from_table_name, smartid_info->from_col_name, smartid_info->to_table_name);
     smartid_info->smartid_query = workload->query_infos.at(query_name).get();
-    ToPhysical::EstimateScanSelectivities(catalog, smartid_info->smartid_query);
     uint64_t from_col_proj_idx{std::numeric_limits<uint64_t>::max()};
     uint64_t key_col_proj_idx{std::numeric_limits<uint64_t>::max()};
     PlanNode* physical_query{nullptr};
@@ -317,8 +344,6 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
         }
       }
     } else {
-      ToPhysical::ResolveJoins(catalog, workload, smartid_info->smartid_query, &factory);
-      ToPhysical::FindBestJoinOrder(smartid_info->smartid_query);
       std::cout << "SmartID Query: " << smartid_info->smartid_query->name << std::endl;
       smartid_info->smartid_query->best_join_order->ToString(std::cout);
       for (const auto& [proj_idx, fullname]:smartid_info->smartid_query->best_join_order->proj_idx_full_name) {
@@ -346,6 +371,7 @@ void SmartIDOptimizer::BuildSmartIDs(Catalog *catalog) {
 int64_t MakeEmbedding(Catalog* catalog, LogicalScanNode* logical_scan, SmartIDInfo* smartid_info) {
   auto from_hist = catalog->GetTable(smartid_info->from_table_name)->GetStatistics()->column_stats.at(smartid_info->from_col_idx)->hist_.get();
   uint64_t ones = ~(0ull);
+  uint64_t max_bits = smartid_info->to_col_type == SqlType::Int64 ? 64 : 32;
   uint64_t curr_embedding = 0;
   for (const auto& filter: logical_scan->filters) {
     Vector vec(filter.col_type);
@@ -399,7 +425,7 @@ int64_t MakeEmbedding(Catalog* catalog, LogicalScanNode* logical_scan, SmartIDIn
     }
 
     uint64_t lo_mask = ~(ones << lo_offset);
-    uint64_t hi_mask = hi_offset == 64 ? ones : ~(ones << hi_offset);
+    uint64_t hi_mask = hi_offset == max_bits ? ones : ~(ones << hi_offset);
     curr_embedding |= (hi_mask ^ lo_mask);
   }
   return curr_embedding;

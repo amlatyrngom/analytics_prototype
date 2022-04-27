@@ -8,7 +8,8 @@ struct Settings {
   static constexpr uint64_t BITMAP_BITS_PER_WORD = 64;
   static constexpr uint64_t BITMAP_BYTES_PER_WORD = 8;
   static constexpr uint64_t LOG_MAX_TUPLES_PER_TABLE = 48;
-  static constexpr int64_t KEY_MASK = 0xFFFFFFFFFFFF;
+  static constexpr int64_t KEY_MASK64 = 0xFFFFFFFFFFFF;
+  static constexpr int32_t KEY_MASK32 = 0xFFFFFF;
 
 
   static Settings *Instance() {

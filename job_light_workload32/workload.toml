@@ -1,13 +1,13 @@
 # Only with star schemas.
-workload_title = "job_light_workload"
-input_folder = "job_light_workload"
-data_folder = "job_light_workload_data"
+workload_title = "job_light_workload32"
+input_folder = "job_light_workload32"
+data_folder = "job_light_workload32_data"
 central_table = "title"
 log_vec_size = 11
 log_block_size = 18
 log_mem_space = 34 # 16GB
 log_disk_space = 36 # 64GB
-reload = false # For reloading data.
+reload = true # For reloading data.
 gen_costs = false # For generating optimization costs.
 rebuild = false # For rebuilding mat_views, indexes or smartids.
 budget=64 # In multiples of 64MB from 0 to 64.
@@ -19,7 +19,7 @@ datafile="title.csv"
 primary=["id"]
 [[tables.title.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.title.col]]
 name="kind_id"
 type="int"
@@ -34,10 +34,10 @@ primary=["id"]
 to_many=true
 [[tables.cast_info.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.cast_info.col]]
 name="movie_id"
-type="bigint"
+type="int"
 foreign="id"
 [[tables.cast_info.col]]
 name="role_id"
@@ -49,10 +49,10 @@ primary=["id"]
 to_many=true
 [[tables.movie_companies.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.movie_companies.col]]
 name="movie_id"
-type="bigint"
+type="int"
 foreign="id"
 [[tables.movie_companies.col]]
 name="company_id"
@@ -68,10 +68,10 @@ primary=["id"]
 to_many=true
 [[tables.movie_info.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.movie_info.col]]
 name="movie_id"
-type="bigint"
+type="int"
 foreign="id"
 [[tables.movie_info.col]]
 name="info_type_id"
@@ -83,10 +83,10 @@ primary=["id"]
 to_many=true
 [[tables.movie_info_idx.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.movie_info_idx.col]]
 name="movie_id"
-type="bigint"
+type="int"
 foreign="id"
 [[tables.movie_info_idx.col]]
 name="info_type_id"
@@ -98,10 +98,10 @@ primary=["id"]
 to_many=true
 [[tables.movie_keyword.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.movie_keyword.col]]
 name="movie_id"
-type="bigint"
+type="int"
 foreign="id"
 [[tables.movie_keyword.col]]
 name="keyword_id"

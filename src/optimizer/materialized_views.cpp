@@ -83,16 +83,23 @@ PlanNode* MaterializedViews::GenBestPlanWithMaterialization(Catalog* catalog, Qu
   double best_cost{Default::RecursiveEstimateDefault(best_logical_plan)};
   std::string best_demat{};
   for (const auto& mat_view: workload->available_mat_views) {
-    for (auto& logical_join: query_info->join_orders) {
-      const auto& [used_mat, cost] = EstimateCostWithMatView(logical_join, mat_view);
-      fmt::print("cost={}, best_cost={}.\n", cost, best_cost);
-      if (cost < best_cost) {
-        best_demat = mat_view;
-        best_cost = cost;
-        best_logical_plan = logical_join;
-      }
+    const auto& [used_mat, cost] = EstimateCostWithMatView(best_logical_plan, mat_view);
+    fmt::print("cost={}, best_cost={}.\n", cost, best_cost);
+    if (cost < best_cost) {
+      best_demat = mat_view;
+      best_cost = cost;
     }
+//    for (auto& logical_join: query_info->join_orders) {
+//      const auto& [used_mat, cost] = EstimateCostWithMatView(logical_join, mat_view);
+//      fmt::print("cost={}, best_cost={}.\n", cost, best_cost);
+//      if (cost < best_cost) {
+//        best_demat = mat_view;
+//        best_cost = cost;
+//        best_logical_plan = logical_join;
+//      }
+//    }
   }
+  best_logical_plan->ToString(std::cout);
   return ToPhysical::MakePhysicalPlanWithMat(catalog, best_logical_plan, best_demat, factory, exec_ctx);
 }
 
@@ -113,13 +120,14 @@ void MaterializedViews::GenerateMateralizationCosts(Catalog *catalog, std::ostre
     auto demat_bytes = total_demat_size.second;
     for (const auto& [q_name, query_info]: workload->query_infos) {
       if (!query_info->IsRegularJoin()) continue;
-      double best_cost{std::numeric_limits<double>::max()};
-      for (const auto& logical_join: query_info->join_orders) {
-        double cost = RecursiveEstimateDemat(tables_set, logical_join);
-        if (cost < best_cost) {
-          best_cost = cost;
-        }
-      }
+      double best_cost = RecursiveEstimateDemat(tables_set, query_info->best_join_order);
+//      double best_cost{std::numeric_limits<double>::max()};
+//      for (const auto& logical_join: query_info->join_orders) {
+//        double cost = RecursiveEstimateDemat(tables_set, logical_join);
+//        if (cost < best_cost) {
+//          best_cost = cost;
+//        }
+//      }
       auto str = fmt::format("mat_view_{},{},{},{},{}\n", fmt::join(tables_set, "___"), demat_num_rows, demat_bytes, q_name, best_cost);
       os << str;
     }

@@ -71,7 +71,10 @@ void TemplatedGatherCompareVector(const Vector *in1, const Vector *in2, Bitmap *
   auto gather_compare_fn = [&](sel_t i) {
     if constexpr (std::is_same_v<cpp_type1, int64_t> && std::is_same_v<cpp_type1, cpp_type2>) {
       // Hack for smartids.
-      return (in_data2[i] & Settings::KEY_MASK) == ((*reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset)) & Settings::KEY_MASK);
+      return (in_data2[i] & Settings::KEY_MASK64) == ((*reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset)) & Settings::KEY_MASK64);
+    }else if constexpr (std::is_same_v<cpp_type1, int32_t> && std::is_same_v<cpp_type1, cpp_type2>) {
+      // Hack for smartids.
+      return (in_data2[i] & Settings::KEY_MASK32) == ((*reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset)) & Settings::KEY_MASK32);
     } else if constexpr (std::is_same_v<cpp_type1, cpp_type2>) {
       return in_data2[i] == *reinterpret_cast<const cpp_type1 *>(in_data1[i] + val_offset);
     } else if constexpr (std::is_arithmetic_v<cpp_type1> && std::is_arithmetic_v<cpp_type2>) {

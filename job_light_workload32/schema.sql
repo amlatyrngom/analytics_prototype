@@ -1,0 +1,11 @@
+
+
+CREATE TABLE movie_info(id INTEGER PRIMARY KEY, movie_id INTEGER NOT NULL, info_type_id INTEGER NOT NULL);
+CREATE TABLE title(id INTEGER PRIMARY KEY, kind_id INTEGER NOT NULL, production_year INTEGER);
+CREATE TABLE movie_keyword(id INTEGER PRIMARY KEY, movie_id INTEGER NOT NULL, keyword_id INTEGER NOT NULL);
+CREATE TABLE movie_info_idx(id INTEGER PRIMARY KEY, movie_id INTEGER NOT NULL, info_type_id INTEGER NOT NULL);
+CREATE TABLE movie_companies(id INTEGER PRIMARY KEY, movie_id INTEGER NOT NULL, company_id INTEGER NOT NULL, company_type_id INTEGER NOT NULL);
+CREATE TABLE cast_info(id INTEGER PRIMARY KEY, movie_id INTEGER NOT NULL, role_id INTEGER NOT NULL);
+
+
+

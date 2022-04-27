@@ -42,6 +42,25 @@ std::string ParseIdxName(const std::string& idx_name) {
   return suffix;
 }
 
+void InsertByType(const VectorProjection* vp, RowIDIndex* index, SqlType key_type) {
+  if (key_type == SqlType::Int32) {
+    auto& index_table = *index->GetIndex32();
+    auto key_data = vp->VectorAt(0)->DataAs<int32_t>();
+    auto rowid_data = vp->VectorAt(1)->DataAs<int64_t>();
+    vp->GetFilter()->Map([&](sel_t i) {
+      index_table[key_data[i] & RowIDIndex::KEY_MASK32].emplace_back(rowid_data[i]);
+    });
+  }
+  if (key_type == SqlType::Int64) {
+    auto& index_table = *index->GetIndex64();
+    auto key_data = vp->VectorAt(0)->DataAs<int64_t>();
+    auto rowid_data = vp->VectorAt(1)->DataAs<int64_t>();
+    vp->GetFilter()->Map([&](sel_t i) {
+      index_table[key_data[i] & RowIDIndex::KEY_MASK64].emplace_back(rowid_data[i]);
+    });
+  }
+}
+
 double BuildIndex(Catalog* catalog, const std::string& table_name) {
 //  if (table_name != "title" && table_name != "movie_info_idx") return;
   auto table = catalog->GetTable(table_name);
@@ -50,10 +69,12 @@ double BuildIndex(Catalog* catalog, const std::string& table_name) {
   std::string row_id_col_name("row_id");
   auto row_id_col_idx = table->GetSchema().ColIdx(row_id_col_name);
   uint64_t key_col_idx{0};
+  SqlType key_col_type;
   auto& central_table_name = catalog->Workload()->central_table_name;
   if (table_name == central_table_name) {
     for (const auto& col: table->GetSchema().Cols()) {
       if (col.IsPK()) {
+        key_col_type = col.Type();
         break;
       }
       key_col_idx++;
@@ -61,6 +82,7 @@ double BuildIndex(Catalog* catalog, const std::string& table_name) {
   } else {
     for (const auto& col: table->GetSchema().Cols()) {
       if (col.IsFK()) {
+        key_col_type = col.Type();
         break;
       }
       key_col_idx++;
@@ -80,22 +102,21 @@ double BuildIndex(Catalog* catalog, const std::string& table_name) {
   }
   auto scan_executor = ExecutionFactory::MakePlanExecutor(table_scan);
   auto row_id_idx = std::make_unique<RowIDIndex>();
-  auto& index = *row_id_idx->GetIndex();
   const VectorProjection* vp;
   auto start = std::chrono::high_resolution_clock::now();
   while ((vp = scan_executor->Next()) != nullptr) {
-    auto key_data = vp->VectorAt(0)->DataAs<int64_t>();
-    auto rowid_data = vp->VectorAt(1)->DataAs<int64_t>();
-    vp->GetFilter()->Map([&](sel_t i) {
-      index[key_data[i] & RowIDIndex::KEY_MASK].emplace_back(rowid_data[i]);
-    });
+    InsertByType(vp, row_id_idx.get(), key_col_type);
   }
   catalog->AddIndex(table_name, std::move(row_id_idx));
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
   // Index Content.
   fmt::print("Index {} content for debugging: \n", table_name);
-  catalog->GetIndex(table_name)->PrinTop(10);
+  if (key_col_type == SqlType::Int32) {
+    catalog->GetIndex(table_name)->PrinTop32(10);
+  } else {
+    catalog->GetIndex(table_name)->PrinTop64(10);
+  }
   return double(duration) / double(1e9);
 }
 

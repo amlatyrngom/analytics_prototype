@@ -9,7 +9,7 @@ import os
 import sys
 
 size_budgets = [(i + 1)*(1 << 26) for i in range(64)]
-data_dir = "job_light_workload_data"
+data_dir = "job_light_workload32_data"
 default_file = f"{data_dir}/default_cost.csv"
 opt_dir = f"{data_dir}/opts"
 cols = ["opt_name", "extra_size", "query_name", "cost"]

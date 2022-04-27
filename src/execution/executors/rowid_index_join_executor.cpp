@@ -30,32 +30,54 @@ RowIDIndexJoinExecutor::RowIDIndexJoinExecutor(RowIDIndexJoinNode *node, std::ve
 }
 
 
+void LookupByType(const VectorProjection* vp, RowIDIndex* index, uint64_t key_idx, SqlType key_type, std::vector<uint64_t>& key_side_matches, std::vector<int64_t>& lookup_side_matches) {
+  if (key_type == SqlType::Int32) {
+    auto index_table = index->GetIndex32();
+    auto filter = vp->GetFilter();
+    filter->Map([&](sel_t i) {
+      auto key_col = vp->VectorAt(key_idx)->DataAs<int32_t>();
+      auto key = key_col[i] & RowIDIndex::KEY_MASK32;
+      if (auto it =  index_table->find(key); it != index_table->end()) {
+        for (const auto& val: it->second) {
+          key_side_matches.emplace_back(i);
+          lookup_side_matches.emplace_back(val);
+        }
+      }
+    });
+  }
+  if (key_type == SqlType::Int64) {
+    auto index_table = index->GetIndex64();
+    auto filter = vp->GetFilter();
+    filter->Map([&](sel_t i) {
+      auto key_col = vp->VectorAt(key_idx)->DataAs<int64_t>();
+      auto key = key_col[i] & RowIDIndex::KEY_MASK64;
+      if (auto it =  index_table->find(key); it != index_table->end()) {
+        for (const auto& val: it->second) {
+          key_side_matches.emplace_back(i);
+          lookup_side_matches.emplace_back(val);
+        }
+      }
+    });
+  }
+}
+
 const VectorProjection *RowIDIndexJoinExecutor::Next() {
   auto key_child = Child(0);
   const VectorProjection* vp = key_child->Next();
   if (vp == nullptr) {
     return nullptr;
   }
+  if (first_call_) {
+    PrepareLookupSide();
+  }
   std::vector<uint64_t> key_side_matches; // Contains indexes in vp.
   std::vector<int64_t> lookup_side_matches; // Contains rowids.
-  auto index_table = node_->IndexTable()->GetIndex();
-  auto filter = vp->GetFilter();
-  auto key_col = vp->VectorAt(node_->KeyIdx())->DataAs<int64_t>();
-  filter->Map([&](sel_t i) {
-    auto key = key_col[i] & RowIDIndex::KEY_MASK;
-    if (auto it =  index_table->find(key); it != index_table->end()) {
-      for (const auto& val: it->second) {
-        key_side_matches.emplace_back(i);
-        lookup_side_matches.emplace_back(val);
-      }
-    }
-  });
+  LookupByType(vp, node_->IndexTable(), node_->KeyIdx(), lookup_side_types_.at(node_->KeyIdx()), key_side_matches, lookup_side_matches);
   if (key_side_matches.empty()) {
     return Next(); // No matches. Try next vector.
   }
   if (first_call_) {
     PrepareKeySide(vp);
-    PrepareLookupSide();
   }
 
   // Reset filter.

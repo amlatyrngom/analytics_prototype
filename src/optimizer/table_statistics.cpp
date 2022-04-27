@@ -460,18 +460,24 @@ void TableStatistics::ComputeTableStats(Catalog* catalog, TableInfo* table_info)
     column_stats->table_id = table->TableID();
     column_stats->col_idx = int64_t(col_idx);
     column_stats->col_type = col.Type();
-//    if (!(col.IsPK() && table_info->to_many)) {
-    ComputeMinMaxCount(&factory, table, column_stats.get());
-    fmt::print("Table {} Col {}: count={}\n", table->Name(), col.Name(), column_stats->count_);
-    ComputeNumDisctinctForCol(&factory, table, column_stats.get());
-    fmt::print("Table {} Col {}: count_distint={}\n", table->Name(), col.Name(), column_stats->count_distinct_);
-    ComputeMaxFreq(&factory, table, column_stats.get());
-    fmt::print("Table {} Col {}: max_freq={}\n", table->Name(), col.Name(), column_stats->max_freq_);
-    fmt::print("Table {} Col {}: top_freq={}\n", table->Name(), col.Name(), column_stats->top_freq_);
-    ComputeHistogram(&factory, table, column_stats.get());
-    fmt::print("Table {} Col {}: Computed Histograms\n", table->Name(), col.Name(), column_stats->max_freq_);
-    ComputeValuesSample(&factory, table, column_stats.get());
-//    }
+    if (!(col.IsPK() && table_info->to_many)) {
+      ComputeMinMaxCount(&factory, table, column_stats.get());
+      fmt::print("Table {} Col {}: count={}\n", table->Name(), col.Name(), column_stats->count_);
+      ComputeNumDisctinctForCol(&factory, table, column_stats.get());
+      fmt::print("Table {} Col {}: count_distint={}\n", table->Name(), col.Name(), column_stats->count_distinct_);
+      ComputeMaxFreq(&factory, table, column_stats.get());
+      fmt::print("Table {} Col {}: max_freq={}\n", table->Name(), col.Name(), column_stats->max_freq_);
+      fmt::print("Table {} Col {}: top_freq={}\n", table->Name(), col.Name(), column_stats->top_freq_);
+      ComputeHistogram(&factory, table, column_stats.get());
+      fmt::print("Table {} Col {}: Computed Histograms\n", table->Name(), col.Name(), column_stats->max_freq_);
+      ComputeValuesSample(&factory, table, column_stats.get());
+    } else {
+      column_stats->count_ = table_stats->num_tuples;
+      column_stats->count_distinct_ = table_stats->num_tuples;
+      column_stats->max_freq_ = 1;
+      column_stats->top_freq_ = 1;
+      column_stats->hist_ = std::make_unique<EquiDepthHistogram>(std::vector<std::pair<Value, Value>>{}, std::vector<double>{}, column_stats->col_type);
+    }
     table_stats->column_stats.emplace_back(std::move(column_stats));
     col_idx++;
   }

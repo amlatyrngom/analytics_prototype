@@ -568,6 +568,7 @@ std::unique_ptr<WorkloadInfo> WorkloadReader::ReadWorkloadInfo(const std::string
     workload_info->rebuild = tml["rebuild"].value_or(false);
   }
   workload_info->budget = tml["budget"].value_or<int>(256);
+  workload_info->embedding_size = tml["embedding_size"].value_or<int>(16);
 
   auto tables = tml["tables"].as_table();
 

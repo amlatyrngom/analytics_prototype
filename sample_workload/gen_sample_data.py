@@ -13,18 +13,18 @@ num_central = 2**log_num_central
 num_dim1 = 2**(log_num_central / 4)
 num_dim2 = 2**(log_num_central - 5)
 num_dim3 = 2**(log_num_central + 1)
-num_dim4 = 2**(log_num_central + 1)
+num_dim4 = 2**(log_num_central + 2)
 
 def gen_central():
     id = np.arange(num_central)
     id1 = id % num_dim1 + 10000 # +10000 is just to distinguish fk from pk.
     id2 = id % num_dim2 + 10000
-    int64_col = id
+    int32_col = id
     df = pd.DataFrame({
         'id': np.array(id).astype(np.int),
         'id1': np.array(id1).astype(np.int),
         'id2': np.array(id2).astype(np.int),
-        'int64_col': np.array(int64_col).astype(np.int),
+        'int32_col': np.array(int32_col).astype(np.int),
     })
     print(df.head())
     df.to_csv("central_table.tbl", index=False, sep=',', header=False)
@@ -61,11 +61,13 @@ def gen_dim3():
     id = np.arange(num_dim3)
     central_id = np.arange(num_central)
     fk = [central_id[i % num_central] for i in range(num_dim3)]
+    int32_col = np.arange(num_dim3, dtype=np.int)
     float32_col = [float_values[i % len(str_values)] for i in range(num_dim3)]
     float64_col = [float_values[i % len(str_values)] for i in range(num_dim3)]
     df = pd.DataFrame({
         'id': np.array(id).astype(np.int),
         'fk': np.array(fk).astype(np.int),
+        'int32_col': np.array(int32_col).astype(np.int),
         'float32_col': float32_col,
         'float64_col': float64_col,
     })

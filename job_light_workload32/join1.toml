@@ -1,0 +1,25 @@
+[queries]
+[queries.join1]
+type="join"
+count=true
+[queries.join1.title_scan]
+type="scan"
+table="title"
+inputs=["id"]
+projections=["id"]
+# [[queries.join1.title_scan.filters]]
+# col="id"
+# expr = "eq"
+# val="1679302"
+
+
+[queries.join1.movie_info_idx_scan]
+type="scan"
+table="movie_info_idx"
+inputs=["movie_id", "info_type_id"]
+projections=["movie_id", "info_type_id"]
+
+[[queries.join1.movie_info_idx_scan.filters]]
+col="info_type_id"
+expr = "eq"
+val = "112"

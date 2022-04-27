@@ -28,7 +28,9 @@ void TemplatedHashVector(const Vector *in, const Bitmap *filter, Vector *out) {
       const auto &varlen = in_data[i];
       out_data[i] = CityHash64(varlen.Data(), varlen.Info().NormalSize());
     } else if constexpr (std::is_arithmetic_v<in_cpp_type> && std::is_same_v<int64_t, in_cpp_type>){
-      out_data[i] = ArithHashMurmur2(in_data[i] & 0xFFFFFFFFFFFF, 0);
+      out_data[i] = ArithHashMurmur2(in_data[i] & 0xFFFFFFFFFFFF, 0); // Hack.
+    } else if constexpr (std::is_arithmetic_v<in_cpp_type> && std::is_same_v<int32_t, in_cpp_type>){
+      out_data[i] = ArithHashMurmur2(in_data[i] & 0xFFFFFF, 0); // Hack.
     } else if constexpr (std::is_arithmetic_v<in_cpp_type>) {
       out_data[i] = ArithHashMurmur2(in_data[i], 0);
     } else {

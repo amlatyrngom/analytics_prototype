@@ -6,4 +6,6 @@ smartids_data
 installations
 sample_workload_data
 job_light_workload_data
+job_light_workload32_data
 tpch_data
+*_data

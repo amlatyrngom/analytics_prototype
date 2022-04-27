@@ -1,0 +1,16 @@
+[queries.query3]
+is_mat_view = true
+type = 'join'
+count = true
+
+    [queries.query3.scan_central_table]
+    inputs = []
+    projections = []
+    table = 'central_table'
+    type = 'scan'
+
+    [queries.query3.scan_dimension_table3]
+    inputs = [ 'int32_col', 'fk' ]
+    projections = [ 'int32_col', 'fk' ]
+    table = 'dimension_table3'
+    type = 'scan'

@@ -5,9 +5,14 @@ data_folder = "sample_workload_data"
 central_table = "central_table"
 log_vec_size = 6 # Minimum is 6.
 log_block_size = 7
-log_mem_space = 20 # 1MB
+log_mem_space = 30 # 1GB
 log_disk_space = 35 # 32GB
-reload = false
+reload = false # For reloading data.
+gen_costs = false # For generating optimization costs.
+rebuild = false # For rebuilding mat_views, indexes or smartids.
+budget=2 # In multiples of 64MB from 0 to 64.
+embedding_size=8
+
 
 [tables]
 [tables.central_table]
@@ -15,7 +20,7 @@ datafile="central_table.tbl"
 primary=["id"]
 [[tables.central_table.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.central_table.col]]
 name="id1"
 type="bigint"
@@ -23,48 +28,9 @@ type="bigint"
 name="id2"
 type="bigint"
 [[tables.central_table.col]]
-name="int64_col"
-type="bigint"
-
-
-
-[tables.dimension_table1]
-datafile="dimension_table1.tbl"
-one_to_many=false
-primary=["id"]
-[[tables.dimension_table1.col]]
-name="id"
-type="bigint"
-[[tables.dimension_table1.col]]
-name="fk"
-type="bigint"
-foreign="id1"
-[[tables.dimension_table1.col]]
 name="int32_col"
 type="int"
-[[tables.dimension_table1.col]]
-name="int16_col"
-type="smallint"
 
-
-[tables.dimension_table2]
-datafile="dimension_table2.tbl"
-primary=["id"]
-to_many=false
-[[tables.dimension_table2.col]]
-name="id"
-type="bigint"
-[[tables.dimension_table2.col]]
-name="fk"
-type="bigint"
-foreign="id2"
-[[tables.dimension_table2.col]]
-name="text_col"
-type="int"
-dict_encode=true
-[[tables.dimension_table2.col]]
-name="date_col"
-type="date"
 
 
 [tables.dimension_table3]
@@ -73,11 +39,14 @@ primary=["id"]
 to_many=true
 [[tables.dimension_table3.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.dimension_table3.col]]
 name="fk"
-type="bigint"
+type="int"
 foreign="id"
+[[tables.dimension_table3.col]]
+name="int32_col"
+type="int"
 [[tables.dimension_table3.col]]
 name="float32_col"
 type="float"
@@ -92,10 +61,10 @@ primary=["id"]
 to_many=true
 [[tables.dimension_table4.col]]
 name="id"
-type="bigint"
+type="int"
 [[tables.dimension_table4.col]]
 name="fk"
-type="bigint"
+type="int"
 foreign="id"
 [[tables.dimension_table4.col]]
 name="int8_col"

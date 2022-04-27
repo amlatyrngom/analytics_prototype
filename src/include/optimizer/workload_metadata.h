@@ -45,6 +45,7 @@ struct SmartIDInfo {
   TableInfo* to_table_info;
   std::string to_col_name;
   uint64_t to_col_idx;
+  SqlType to_col_type;
   uint64_t bit_offset;
   uint64_t num_bits;
   QueryInfo* smartid_query{nullptr};
@@ -66,7 +67,8 @@ struct WorkloadInfo {
   bool reload{false};
   bool gen_costs{false};
   bool rebuild{false};
-  int budget{256};
+  int budget{32};
+  int embedding_size{16};
   std::unordered_map<std::string, std::unique_ptr<TableInfo>> table_infos;
   std::unordered_map<std::string, std::unique_ptr<QueryInfo>> query_infos;
   std::unordered_map<std::string, std::unique_ptr<QueryInfo>> mat_view_queries;
