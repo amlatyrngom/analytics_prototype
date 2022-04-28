@@ -15,20 +15,27 @@ Table *Catalog::CreateTable(const std::string &name, const Schema *schema, bool 
   Schema copy_schema = *schema;
   auto table_id = curr_table_id_++;
   auto table = std::make_unique<Table>(table_id, name, std::move(copy_schema), buffer_manager_.get(), info_store_.get(), add_row_id);
-  tables_.emplace(table_id, std::move(table));
-  table_id_name_map_.emplace(table_id, name);
-  table_name_id_map_.emplace(name, table_id);
+  tables_[table_id] = std::move(table);
+  table_id_name_map_[table_id] = name;
+  table_name_id_map_[name] = table_id;
   return tables_.at(table_id).get();
 }
 
 Table *Catalog::CreateOrClearTable(const std::string &name, const Schema *schema) {
   Table* res = GetTable(name);
-  if (res == nullptr) {
-    return CreateTable(name, schema, false);
-  } else {
-    res->ClearBlocks();
-    return res;
+  if (res != nullptr) {
+    DeleteTable(name);
   }
+  return CreateTable(name, schema, false);
+}
+
+void Catalog::DeleteTable(const std::string &name) {
+  Table* res = GetTable(name);
+  if (res == nullptr) {
+    return;
+  }
+  res->ClearBlocks();
+  res->DeleteSelf();
 }
 
 Table *Catalog::GetTable(const std::string &name) {

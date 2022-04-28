@@ -31,6 +31,7 @@ class Catalog {
   // Remove all table blocks if table exists.
   Table *CreateOrClearTable(const std::string &name, const Schema *schema);
 
+  void DeleteTable(const std::string& name);
   /**
    * Return the table with the given name.
    */

@@ -670,15 +670,9 @@ double ToPhysical::MakeMaterializedView(Catalog *catalog, QueryInfo *query_info)
     auto demat_scan = factory.MakeScan(demat_table, std::move(cols_to_read), std::move(projections), std::move(filters));
     auto counter = factory.MakeStaticAggregation(demat_scan, {{0, AggType::COUNT}});
     auto printer = factory.MakePrint(counter, {});
+    std::cout << "Demat Table: " << demat_table->Name() << std::endl;
     auto executor = ExecutionFactory::MakePlanExecutor(printer);
     std::cout << "DEMAT SCAN COUNT:" << std::endl;
-    executor->Next();
-  }
-  {
-    auto counter = factory.MakeStaticAggregation(physical_join, {{0, AggType::COUNT}});
-    auto printer = factory.MakePrint(counter, {});
-    auto executor = ExecutionFactory::MakePlanExecutor(printer);
-    std::cout << "DEMAT JOIN COUNT:" << std::endl;
     executor->Next();
   }
   {

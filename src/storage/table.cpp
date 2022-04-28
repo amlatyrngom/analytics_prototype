@@ -83,6 +83,42 @@ void Table::ClearBlocks() {
   block_ids_.clear();
 }
 
+void Table::DeleteSelf() {
+  ClearBlocks();
+  try {
+    auto& db = *info_store_->db;
+    SQLite::Transaction transaction(*info_store_->db);
+    {
+      SQLite::Statement q(db, "DELETE FROM column_stats WHERE table_id=?");
+      q.bind(1, table_id_);
+      std::cout << q.getExpandedSQL() << std::endl;
+      q.exec();
+    }
+    {
+      SQLite::Statement q(db, "DELETE FROM table_stats WHERE table_id=?");
+      q.bind(1, table_id_);
+      std::cout << q.getExpandedSQL() << std::endl;
+      q.exec();
+    }
+    {
+      SQLite::Statement q(db, "DELETE FROM table_schemas WHERE table_id=?");
+      q.bind(1, table_id_);
+      std::cout << q.getExpandedSQL() << std::endl;
+      q.exec();
+    }
+    {
+      SQLite::Statement q(db, "DELETE FROM tables WHERE table_id=?");
+      q.bind(1, table_id_);
+      std::cout << q.getExpandedSQL() << std::endl;
+      q.exec();
+    }
+    transaction.commit();
+  } catch (std::exception& e) {
+    std::cout << e.what() << std::endl;
+    throw e;
+  }
+}
+
 void Table::FinalizeEncodings() {
   for (auto& [col_idx, dict_encoding]: dict_encodings_) {
     dict_encoding->Finalize(this);

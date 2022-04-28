@@ -207,11 +207,12 @@ void MaterializedViews::BuildAllValuableMatViews(Catalog *catalog) {
   QueryReader::ReadWorkloadQueries(catalog, workload, &factory, {mat_views_toml_file});
   std::string mat_view_build_times(fmt::format("{}/mat_views_build_times.csv", workload->data_folder));
   std::ofstream os(mat_view_build_times);
+  ToPhysical::FindBestJoinOrders(catalog, &factory, FreqType::TOP);
   for (auto& [query_name, query_info]: workload->query_infos) {
     if (mat_views_to_build.contains(query_name)) {
-      ToPhysical::EstimateScanSelectivities(catalog, query_info.get());
-      ToPhysical::ResolveJoins(catalog, workload, query_info.get(), &factory);
-      ToPhysical::FindBestJoinOrder(query_info.get());
+//      ToPhysical::EstimateScanSelectivities(catalog, query_info.get());
+//      ToPhysical::ResolveJoins(catalog, workload, query_info.get(), &factory);
+//      ToPhysical::FindBestJoinOrder(query_info.get());
       std::cout << "Found: " << query_info->name << std::endl;
       query_info->best_join_order->ToString(std::cout);
 

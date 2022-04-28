@@ -88,11 +88,11 @@ double RunBestDefault(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(5));
   } else if (first_duration_sec < 10) {
     total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
-    total_num_exec = 2;
+    total_num_exec = 1;
   }
   uint64_t curr_execs = 1; // Includes first warm execution.
   double duration_sum = first_duration_sec;
@@ -151,11 +151,11 @@ double RunBestMatView(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(5));
   } else if (first_duration_sec < 10) {
     total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
-    total_num_exec = 2;
+    total_num_exec = 1;
   }
   uint64_t curr_execs = 1; // Includes first warm execution.
   double duration_sum = first_duration_sec;
@@ -214,11 +214,11 @@ double RunBestIndexes(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(5));
   } else if (first_duration_sec < 10) {
     total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
-    total_num_exec = 2;
+    total_num_exec = 1;
   }
   uint64_t curr_execs = 1; // Includes first warm execution.
   double duration_sum = first_duration_sec;
@@ -275,11 +275,11 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!for_benchmark) return first_duration_sec;
   uint64_t total_num_exec = 0;
   if (first_duration_sec < 1) {
-    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(10));
+    total_num_exec = std::min(uint64_t(10 / first_duration_sec) + 1, uint64_t(5));
   } else if (first_duration_sec < 10) {
     total_num_exec = std::min(uint64_t(30 / first_duration_sec) + 1, uint64_t(3));
   } else {
-    total_num_exec = 2;
+    total_num_exec = 1;
   }
   uint64_t curr_execs = 1; // Includes first warm execution.
   double duration_sum = first_duration_sec;
@@ -313,10 +313,12 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
   // Deal with queries.
   std::vector<std::string> query_files{
 //      "job_light_workload/full.toml",
-      "job_light_workload/training_queries.toml",
-      "job_light_workload/testing_queries.toml",
+//      "job_light_workload/training_queries.toml",
+//      "job_light_workload/testing_queries.toml",
 //      "job_light_workload/join1.toml",
 //      "job_light_workload32/full.toml",
+      "job_light_workload32/training_queries.toml",
+      "job_light_workload32/testing_queries.toml",
 //      "job_light_workload32/join1.toml",
 //      "sample_workload/test_joins1.toml",
 //      "sample_workload/test_joins2.toml",
@@ -334,7 +336,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 void RunDefaultExpt(Catalog* catalog, bool with_sip) {
   auto result_file = fmt::format("{}/default_results{}.csv", catalog->Workload()->data_folder, with_sip ? "_with_sip" : "");
   std::ofstream result_os(result_file);
-  for (int i = 4; i <= 100; i += 50) {
+  for (int i = 1; i <= 100; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -354,7 +356,7 @@ void RunMatViewExpt(Catalog* catalog, int budget) {
       std::terminate();
     }
   }
-  for (int i = 60; i <= 60; i++) {
+  for (int i = 1; i <= 100; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -369,7 +371,7 @@ void RunIndexExpt(Catalog* catalog, int budget) {
   InitIndexes(catalog, budget);
   fmt::print("Available indexes for budget={}: {}\n", budget, catalog->Workload()->available_idxs);
   catalog->Workload()->rebuild = false;
-  for (int i = 25; i <= 25; i++) {
+  for (int i = 1; i <= 100; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -382,7 +384,7 @@ void RunSmartIDsExpt(Catalog* catalog) {
   std::ofstream result_os(result_file);
   InitSmartIDs(catalog);
   catalog->Workload()->rebuild = false;
-  for (int i = 4; i <= 100; i += 50) {
+  for (int i = 1; i <= 100; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -400,11 +402,12 @@ int main() {
   auto workload = catalog->Workload();
 
   // Default.
-  {
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      RunDefaultExpt(catalog.get(), false);
-    }
-  }
+//  {
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      RunDefaultExpt(catalog.get(), false);
+//      RunDefaultExpt(catalog.get(), true);
+//    }
+//  }
 
 //   Mat views.
   {
@@ -417,24 +420,24 @@ int main() {
       }
     }
   }
-
-  // Indexes
-  {
-    InitIndexes(catalog.get(), 4);
-    for (int budget = 2; budget <= 10; budget += 2) {
-      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-        RunIndexExpt(catalog.get(), budget);
-      }
-    }
-  }
 //
-//   SmartIDs
-  {
-    InitSmartIDs(catalog.get());
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      RunSmartIDsExpt(catalog.get());
-    }
-  }
+//  // Indexes
+//  {
+//    InitIndexes(catalog.get(), 4);
+//    for (int budget = 2; budget <= 10; budget += 2) {
+//      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//        RunIndexExpt(catalog.get(), budget);
+//      }
+//    }
+//  }
+//////
+//////   SmartIDs
+//  {
+//    InitSmartIDs(catalog.get());
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      RunSmartIDsExpt(catalog.get());
+//    }
+//  }
 
   // Indexes
 //  {

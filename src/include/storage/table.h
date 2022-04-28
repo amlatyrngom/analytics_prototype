@@ -29,6 +29,7 @@ class Table {
 
   void InsertTableBlock(std::unique_ptr<TableBlock> && table_block);
   void ClearBlocks();
+  void DeleteSelf();
 
   ~Table();
 
