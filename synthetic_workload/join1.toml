@@ -1,19 +1,21 @@
 [queries]
-[queries.query1]
+[queries.join1]
 type="join"
 count=true
-[queries.query1.A_scan]
+[queries.join1.A_scan]
 type="scan"
 table="A"
 inputs=["filter_col"]
 projections=["filter_col"]
-[[queries.query1.A_scan.filters]]
+[[queries.join1.A_scan.filters]]
 col="filter_col"
-expr = "eq"
-val="1" # Updates will set the embedding value to 0.
+expr = "between"
+left_closed = true
+right_closed = true
+vals=["1", "31"] # Updates will set the embedding value to 0.
 
 
-[queries.query1.B_scan]
+[queries.join1.B_scan]
 type="scan"
 table="B"
 inputs=[]

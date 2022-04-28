@@ -142,5 +142,12 @@ class HashJoinExecutor: public PlanExecutor {
   // Join stats
   Bitmap build_out_filter_;
   Bitmap probe_out_filter_;
+
+  // Stats:
+ public:
+  double build_time{0};
+  double probe_time{0};
+  uint64_t probe_in{0};
+  uint64_t join_out{0};
 };
 }

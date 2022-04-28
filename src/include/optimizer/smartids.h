@@ -17,5 +17,6 @@ struct SmartIDOptimizer {
   static void BuildSmartIDs(Catalog* catalog);
   static PlanNode* GenerateBestPlanWithSmartIDs(Catalog* catalog, QueryInfo* query_info, ExecutionFactory* factory, ExecutionContext* exec_ctx);
   static void DoUpdateExpts(Catalog* catalog);
+  static void DoMotivationExpts(Catalog* catalog);
 };
 }

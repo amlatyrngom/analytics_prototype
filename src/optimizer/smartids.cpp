@@ -480,12 +480,249 @@ PlanNode* SmartIDOptimizer::GenerateBestPlanWithSmartIDs(Catalog* catalog, Query
   return ToPhysical::MakePhysicalPlanWithSmartIDs(catalog, logical_join, table_embeddings, factory, exec_ctx);
 }
 
+
+struct ScanStat {
+  std::string table_name;
+  uint64_t in;
+  uint64_t out;
+  double scan_time;
+
+  void ToString(std::ostream& os) const {
+    os << fmt::format("ScanStat(name={}, in={}, out={}, time={})\n", table_name, in, out, scan_time);
+  }
+};
+
+struct JoinStat {
+  uint64_t probe_in;
+  uint64_t join_out;
+  double build_time;
+  double probe_time;
+
+  void ToString(std::ostream& os) const {
+    os << fmt::format("JoinStat(probe_in={}, out={}, build_time={}, probe_time={})\n", probe_in, join_out, build_time, probe_time);
+  }
+};
+
+using ScanStats = std::map<std::string, ScanStat>;
+using JoinStats = std::vector<JoinStat>;
+
+void MakeStats(ScanStats& scan_stats, JoinStats& join_stats, PlanExecutor* executor) {
+  auto scan_exec = dynamic_cast<ScanExecutor*>(executor);
+  if (scan_exec != nullptr) {
+    auto table_name = scan_exec->scan_node_->GetTable()->Name();
+    ScanStat s{};
+    s.table_name = table_name;
+    s.in = scan_exec->scan_in;
+    s.out = scan_exec->scan_out;
+    s.scan_time = scan_exec->scan_time / double(1e9);
+    scan_stats[table_name] = s;
+    return;
+  }
+  auto join_exec = dynamic_cast<HashJoinExecutor*>(executor);
+  if (join_exec != nullptr) {
+    MakeStats(scan_stats, join_stats, executor->Child(0));
+    MakeStats(scan_stats, join_stats, executor->Child(1));
+    JoinStat s{};
+    s.probe_in = join_exec->probe_in;
+    s.join_out = join_exec->join_out;
+    s.probe_time = join_exec->probe_time / double(1e9);
+    s.build_time = join_exec->build_time / double(1e9);
+    join_stats.emplace_back(s);
+    return;
+  }
+  MakeStats(scan_stats, join_stats, executor->Child(0));
+}
+
+
+std::tuple<JoinStats, ScanStats, double> RunWithStats(Catalog* catalog, const std::string& q_name, bool with_smartids, bool with_sip=false, int num_runs=10) {
+  auto workload = catalog->Workload();
+  auto query = workload->query_infos.at("join1").get();
+  auto logical_join = query->best_join_order;
+  ExecutionContext exec_ctx;
+  ExecutionFactory execution_factory(catalog);
+  PlanNode* physical_plan;
+  if (with_smartids) {
+    physical_plan = SmartIDOptimizer::GenerateBestPlanWithSmartIDs(catalog, query, &execution_factory, &exec_ctx);
+  } else {
+    physical_plan = ToPhysical::MakePhysicalJoin(catalog, workload, logical_join, &exec_ctx, &execution_factory, with_sip);
+  }
+  if (query->count) {
+    physical_plan = execution_factory.MakeStaticAggregation(physical_plan, {
+        {0, AggType::COUNT},
+    });
+  }
+  auto printer = execution_factory.MakePrint(physical_plan, {});
+  {
+    std::cout << "Warming execution" << std::endl;
+    auto executor = ExecutionFactory::MakePlanExecutor(printer, &exec_ctx);
+    executor->Next();
+  }
+  JoinStats acc_join_stats;
+  ScanStats acc_scan_stats;
+  double sum_duration_sec{0};
+  for (int i = 0; i < num_runs; i++) {
+    std::cout << "Warm execution" << std::endl;
+    auto executor = ExecutionFactory::MakePlanExecutor(printer, &exec_ctx);
+    auto first_start = std::chrono::high_resolution_clock::now();
+    executor->Next();
+    auto first_stop = std::chrono::high_resolution_clock::now();
+    auto first_duration = duration_cast<std::chrono::nanoseconds>(first_stop - first_start).count();
+    sum_duration_sec += double(first_duration) / double(1e9);
+    JoinStats join_stats;
+    ScanStats scan_stats;
+    MakeStats(scan_stats, join_stats, executor.get());
+    if (acc_join_stats.empty()) {
+      acc_join_stats = join_stats;
+      acc_scan_stats = scan_stats;
+    } else {
+      for (const auto& [table_name, s]: scan_stats) {
+        acc_scan_stats[table_name].scan_time += s.scan_time;
+      }
+      acc_join_stats[0].build_time += join_stats[0].build_time;
+      acc_join_stats[0].probe_time += join_stats[0].probe_time;
+    }
+  }
+  for (const auto& [table_name, _]: acc_scan_stats) {
+    acc_scan_stats[table_name].scan_time /= num_runs;
+    acc_scan_stats[table_name].scan_time /= num_runs;
+  }
+  acc_join_stats[0].build_time /= num_runs;
+  acc_join_stats[0].probe_time /= num_runs;
+
+
+  for (const auto& [_, s]: acc_scan_stats) {
+    s.ToString(std::cout);
+  }
+  for (const auto& s: acc_join_stats) {
+    s.ToString(std::cout);
+  }
+
+  return {acc_join_stats, acc_scan_stats, sum_duration_sec / num_runs};
+}
+
+void SmartIDOptimizer::DoMotivationExpts(Catalog* catalog) {
+  std::vector<std::pair<bool, bool>> runs = {
+      {true, false}, {false, false}, {false, true},
+  };
+  auto logical_join = catalog->Workload()->query_infos.at("join1").get()->best_join_order;
+  auto left_size = logical_join->left_scan->estimated_output_size;
+  auto right_size = logical_join->right_scan->estimated_output_size;
+  std::string outfile = fmt::format("{}/motivation_results.csv", catalog->Workload()->data_folder);
+  std::ofstream results_os(outfile);
+  for (bool is_good: {true, false}) {
+    if (is_good) {
+      logical_join->left_scan->estimated_output_size = left_size;
+      logical_join->right_scan->estimated_output_size = right_size;
+    } else {
+      logical_join->left_scan->estimated_output_size = right_size;
+      logical_join->right_scan->estimated_output_size = left_size;
+    }
+    for (const auto& [with_smartids, with_sip]: runs) {
+      std::string expt_name;
+      if (with_smartids) {
+        expt_name = "SmartIDs";
+      } else if (with_sip) {
+        expt_name = "SIP";
+      } else {
+        expt_name = "Vanilla";
+      }
+      std::string goodness = is_good ? "Good" : "Bad";
+      auto [join_stats, scan_stats, total_rt] = RunWithStats(catalog, "join1", with_smartids, with_sip);
+      double remaining_time{total_rt};
+      for (const auto& [_, s]: scan_stats) {
+        results_os << fmt::format("{},{},{} Scan,{}\n", expt_name, goodness, s.table_name, s.scan_time);
+        remaining_time -= s.scan_time;
+      }
+      results_os << fmt::format("{},{},Build,{}\n", expt_name, goodness, join_stats[0].build_time);
+      remaining_time -= join_stats[0].build_time;
+      results_os << fmt::format("{},{},Probe,{}\n", expt_name, goodness, join_stats[0].probe_time);
+      remaining_time -= join_stats[0].probe_time;
+//      results_os << fmt::format("{},{},Other,{}\n", expt_name, goodness, remaining_time);
+    }
+  }
+  // Restore just in case.
+  logical_join->left_scan->estimated_output_size = left_size;
+  logical_join->right_scan->estimated_output_size = right_size;
+}
+
 void SmartIDOptimizer::DoUpdateExpts(Catalog *catalog) {
   // Run query with
   // Build Index on A and B.
   // Update A at ids [lo, hi] to set filter_col = 0.
-  // Update corresponding rows in B.
+  // Update corresponding rows in B by settings
   // Should be easy.
+  auto workload = catalog->Workload();
+  if (workload->available_idxs.empty()) {
+    // Rebuild indexes to speedup updates.
+    Indexes::BuildAllKeyIndexes(catalog);
+  }
+  std::ofstream update_os(workload->data_folder + "/update_results.csv");
+  uint64_t log_block_size = Settings::Instance()->LogBlockSize();
+  uint64_t ones = ~(0ull);
+  uint64_t row_id_mask = ~(ones << log_block_size);
+  auto A_table = catalog->GetTable("A");
+  auto A_index = catalog->GetIndex("A");
+  auto B_table = catalog->GetTable("B");
+  auto B_index = catalog->GetIndex("B");
+  uint64_t A_size = A_table->GetStatistics()->num_tuples;
+  uint64_t updates_per_round = (1 << 15);
+  double A_update_duration{0};
+  double B_update_duration{0};
+  uint64_t max_num_rounds = A_size / updates_per_round;
+  uint64_t curr_num_rounds = 0;
+  for (uint64_t i = 0; i < A_size; i += updates_per_round) {
+    if (curr_num_rounds == max_num_rounds) return;
+    curr_num_rounds++;
+    auto start = std::chrono::high_resolution_clock::now();
+    std::unordered_map<int64_t, std::vector<uint64_t>> A_rows;
+    for (uint64_t id = i; id < i+updates_per_round; id++) {
+      if (id%512 <= 31) continue;
+      auto row_id = A_index->GetIndex64()->at(id & RowIDIndex::KEY_MASK64).at(0);
+      auto block_id = row_id >> log_block_size;
+      auto row_idx = row_id & row_id_mask;
+      A_rows[block_id].emplace_back(row_idx);
+    }
+    for (const auto& [block_id, row_idxs]: A_rows) {
+      auto block_info = A_table->BM()->Pin(block_id);
+      auto raw_table_block = TableBlock::FromBlockInfo(block_info);
+      auto filter_col_data = raw_table_block->MutableColDataAs<int32_t>(1);
+      for (const auto& row_idx: row_idxs) {
+        filter_col_data[row_idx] = 0;
+      }
+      A_table->BM()->Unpin(block_info, false); // Set dirty to false to be able to easily rerun expts.
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    start = std::chrono::high_resolution_clock::now();
+    A_update_duration += double(duration) / double(1e9);
+    std::unordered_map<int64_t, std::vector<uint64_t>> B_rows;
+    for (uint64_t id = i; id < i+updates_per_round; id++) {
+      if (id%512 <= 31) continue;
+      auto& row_ids = B_index->GetIndex64()->at(id & RowIDIndex::KEY_MASK64);
+      for (const auto& row_id: row_ids) {
+        auto block_id = row_id >> log_block_size;
+        auto row_idx = row_id & row_id_mask;
+        B_rows[block_id].emplace_back(row_idx);
+      }
+    }
+    for (const auto& [block_id, row_idxs]: B_rows) {
+      auto block_info = B_table->BM()->Pin(block_id);
+      auto raw_table_block = TableBlock::FromBlockInfo(block_info);
+      auto fk_col_data = raw_table_block->MutableColDataAs<int64_t>(1);
+      for (const auto& row_idx: row_idxs) {
+        fk_col_data[row_idx] = 1ull << 48;
+      }
+      B_table->BM()->Unpin(block_info, false); // Set dirty to false to be able to easily rerun expts.
+    }
+    stop = std::chrono::high_resolution_clock::now();
+    duration = duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    B_update_duration += double(duration) / double(1e9);
+    auto [default_join_stats, default_scan_stats, default_rt] = RunWithStats(catalog, "join1", false, false);
+    auto [smartids_join_stats, smartids_scan_stats, smartids_rt] = RunWithStats(catalog, "join1", true, false);
+    double fpr = 100.0 * ((double(smartids_scan_stats["B"].out) - smartids_join_stats[0].join_out) / double(smartids_scan_stats["B"].out));
+    double prefilter_rate = 100.0 * ((double(smartids_scan_stats["B"].in) - smartids_scan_stats["B"].out) / double(smartids_scan_stats["B"].in));
+    update_os << fmt::format("updates,{},{},{},{},{},{}\n", fpr, prefilter_rate, default_rt, smartids_rt, A_update_duration, B_update_duration);
+  }
 }
 
 }

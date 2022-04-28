@@ -2,11 +2,14 @@ import pandas as pd
 import numpy as np
 import os
 
+# Who knows; I don't!
+
+
 # From 64MB to 4GB in increments of 64MB.
 import sys
 
 size_budgets = [(i + 1)*(1 << 26) for i in range(64)]
-data_dir = "synthetic_workload_data"
+data_dir = "motivation_workload_data"
 default_file = f"{data_dir}/default_cost.csv"
 opt_dir = f"{data_dir}/opts"
 cols = ["opt_name", "extra_size", "query_name", "cost"]
@@ -289,5 +292,5 @@ if sys.argv[1] == "mat_view":
 
 
 if sys.argv[1] == "smartid":
-    # gen_best_embeddings(num_free_bits=8, min_num_bits=2, total_id_size=32)
-    gen_best_embeddings()
+    gen_best_embeddings(num_free_bits=8, min_num_bits=2, total_id_size=32)
+    # gen_best_embeddings()

@@ -13,13 +13,20 @@ class ScanExecutor: public PlanExecutor {
 
   const VectorProjection * Next() override;
  private:
-  ScanNode* scan_node_;
   std::vector<std::unique_ptr<ExprExecutor>> filters_;
   std::vector<std::unique_ptr<ExprExecutor>> projections_;
   std::unique_ptr<TableIterator> ti_;
   std::unique_ptr<VectorProjection> table_vp_;
   std::unique_ptr<Bitmap> filter_;
   bool init_{false};
+
+ public:
+  // For experiments
+  uint64_t scan_in{0};
+  uint64_t scan_out{0};
+  double scan_time{0};
+  // Hack for expts
+  ScanNode* scan_node_;
 };
 
 }

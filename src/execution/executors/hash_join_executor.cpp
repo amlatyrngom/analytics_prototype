@@ -99,6 +99,7 @@ void HashJoinExecutor::Build() {
     VectorInsert(vp);
     // Insertion timer end
     auto end = std::chrono::high_resolution_clock::now();
+    build_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
   }
   built_ = true;
 }
@@ -115,6 +116,7 @@ void HashJoinExecutor::FindCandidates(const VectorProjection *vp) {
       return bloom_->Test(hash_data[i]);
     });
   }
+  probe_in += cand_filter_.NumOnes();
   cand_filter_.Update([&](sel_t i) {
     if (const auto &it = join_table_.find(hash_data[i]); it != join_table_.end()) {
       cand_data[i] = it->second;
@@ -238,6 +240,7 @@ const VectorProjection *HashJoinExecutor::Next() {
     Clear();
     return nullptr;
   }
+  auto start = std::chrono::high_resolution_clock::now();
   // For right-semi-join and statistics, set probe marks to 0;
   if (node_->GetJoinType() == JoinType::RIGHT_SEMI) {
     probe_marks_.Resize(vp->NumRows());
@@ -253,10 +256,15 @@ const VectorProjection *HashJoinExecutor::Next() {
     AdvanceChains();
   }
   if (build_matches_.empty()) {
+    auto end = std::chrono::high_resolution_clock::now();
+    probe_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
     return Next();
   }
   GatherMatches(vp);
   first_probe_ = false;
+  auto end = std::chrono::high_resolution_clock::now();
+  probe_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
+  join_out += probe_matches_.size();
   return result_.get();
 }
 

@@ -1,0 +1,24 @@
+[queries]
+[queries.join1]
+type="join"
+count=true
+[queries.join1.title_scan]
+type="scan"
+table="title"
+inputs=["id", "production_year"]
+projections=["id"]
+[[queries.join1.title_scan.filters]]
+col="production_year"
+expr = "lt"
+val="2000"
+
+
+[queries.join1.cast_info_scan]
+type="scan"
+table="cast_info"
+inputs=["role_id"]
+projections=[]
+[[queries.join1.cast_info_scan.filters]]
+col="role_id"
+expr = "eq"
+val="11"

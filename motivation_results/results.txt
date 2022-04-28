@@ -1,0 +1,29 @@
+# Default: Good order
+ScanStat(name=cast_info, in=36244344, out=316118, time=0.018580328600000005)
+ScanStat(name=title, in=2528312, out=1093851, time=0.0014933693)
+JoinStat(probe_in=1093851, out=136269, build_time=0.0497276098, probe_time=0.0305552098)
+
+# SIP: Good order
+ScanStat(name=cast_info, in=36244344, out=316118, time=0.0155886226)
+ScanStat(name=title, in=2528312, out=1093851, time=0.0012766778)
+JoinStat(probe_in=124363, out=136269, built_time=0.048013904600000004, probe_time=0.015664961499999998)
+
+# Embeddings: Good order
+ScanStat(name=cast_info, in=36244344, out=158365, time=0.015950299999999997)
+ScanStat(name=title, in=2528312, out=122446, time=0.0023997063)
+JoinStat(probe_in=122446, out=136269, build_time=0.024427928199999997, probe_time=0.006649021)
+
+# Default: Bad Order.
+ScanStat(name=title, in=2528312, out=1093851, time=0.0015708476)
+ScanStat(name=cast_info, in=36244344, out=316118, time=0.015529212699999998)
+JoinStat(probe_in=316118, out=136269, build_time=0.17392263540000003, probe_time=0.015039162)
+
+# SIP: Bad Order.
+ScanStat(name=title, in=2528312, out=1093851, time=0.0014930585999999998)
+ScanStat(name=cast_info, in=36244344, out=316118, time=0.014179476199999999)
+JoinStat(probe_in=200867, out=136269, build_time=0.16749860970000002, probe_time=0.012508246800000001)
+
+# Embedding: "Bad" Order.
+ScanStat(name=title, in=2528312, out=122446, time=0.0023170981)
+ScanStat(name=cast_info, in=36244344, out=158365, time=0.0150372277)
+JoinStat(probe_in=158365, out=136269, build_time=0.0123274241, probe_time=0.0086309972)

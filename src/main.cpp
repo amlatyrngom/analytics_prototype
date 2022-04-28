@@ -297,12 +297,13 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
 
 
 std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommon() {
-  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_workload32/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_full_workload32/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_full_workload64/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("sample_workload/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("synthetic_workload/workload.toml");
+  auto catalog = std::make_unique<Catalog>("motivation_workload/workload.toml");
   auto workload = catalog->Workload();
   WorkloadReader::ReadWorkloadTables(catalog.get(), workload);
 //  if (workload->just_load) {
@@ -317,13 +318,14 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 //      "job_light_workload/testing_queries.toml",
 //      "job_light_workload/join1.toml",
 //      "job_light_workload32/full.toml",
-      "job_light_workload32/training_queries.toml",
-      "job_light_workload32/testing_queries.toml",
+//      "job_light_workload32/training_queries.toml",
+//      "job_light_workload32/testing_queries.toml",
 //      "job_light_workload32/join1.toml",
 //      "sample_workload/test_joins1.toml",
 //      "sample_workload/test_joins2.toml",
 //      "sample_workload/test_joins3.toml",
 //      "synthetic_workload/join1.toml",
+      "motivation_workload/join1.toml",
   };
   auto execution_factory = std::make_unique<ExecutionFactory>(catalog.get());
   QueryReader::ReadWorkloadQueries(catalog.get(), workload, execution_factory.get(), query_files);
@@ -336,7 +338,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 void RunDefaultExpt(Catalog* catalog, bool with_sip) {
   auto result_file = fmt::format("{}/default_results{}.csv", catalog->Workload()->data_folder, with_sip ? "_with_sip" : "");
   std::ofstream result_os(result_file);
-  for (int i = 1; i <= 100; i += 1) {
+  for (int i = 8; i <= 8; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -401,6 +403,22 @@ int main() {
   }
   auto workload = catalog->Workload();
 
+  // Motivation.
+  {
+    InitSmartIDs(catalog.get());
+    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+      SmartIDOptimizer::DoMotivationExpts(catalog.get());
+    }
+  }
+
+  // Synthetic
+//  {
+//    InitSmartIDs(catalog.get());
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      SmartIDOptimizer::DoUpdateExpts(catalog.get());
+//    }
+//  }
+
   // Default.
 //  {
 //    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
@@ -410,18 +428,18 @@ int main() {
 //  }
 
 //   Mat views.
-  {
-    if (workload->rebuild || workload->gen_costs) {
-      InitMatView(catalog.get(), 16);
-    }
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      for (int budget: {2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128}) {
-        RunMatViewExpt(catalog.get(), budget);
-      }
-    }
-  }
+//  {
+//    if (workload->rebuild || workload->gen_costs) {
+//      InitMatView(catalog.get(), 16);
+//    }
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      for (int budget: {2, 4, 6, 8, 10, 16, 32, 48, 64, 80, 96, 112, 128}) {
+//        RunMatViewExpt(catalog.get(), budget);
+//      }
+//    }
+//  }
 //
-//  // Indexes
+  // Indexes
 //  {
 //    InitIndexes(catalog.get(), 4);
 //    for (int budget = 2; budget <= 10; budget += 2) {
@@ -431,7 +449,7 @@ int main() {
 //    }
 //  }
 //////
-//////   SmartIDs
+////   SmartIDs
 //  {
 //    InitSmartIDs(catalog.get());
 //    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {

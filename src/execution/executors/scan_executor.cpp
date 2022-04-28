@@ -20,8 +20,12 @@ ScanExecutor::ScanExecutor(ScanNode *scan_node,
 
 
 const VectorProjection * ScanExecutor::Next() {
-  if (!ti_->Advance()) return nullptr;
+  auto start = std::chrono::high_resolution_clock::now();
+  if (!ti_->Advance()) {
+    return nullptr;
+  }
   filter_->SetFrom(table_vp_->GetFilter());
+  scan_in += filter_->NumOnes();
   for (auto &filter_expr: filters_) {
     filter_expr->Evaluate(table_vp_.get(), filter_.get());
   }
@@ -29,7 +33,10 @@ const VectorProjection * ScanExecutor::Next() {
     auto vec = proj->Evaluate(table_vp_.get(), filter_.get());
     if (!init_) result_->AddVector(vec);
   }
+  scan_out += filter_->NumOnes();
   init_ = true;
+  auto end = std::chrono::high_resolution_clock::now();
+  scan_time += duration_cast<std::chrono::nanoseconds>(end - start).count();
   return result_.get();
 }
 }
