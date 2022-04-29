@@ -62,7 +62,7 @@ void InsertByType(const VectorProjection* vp, RowIDIndex* index, SqlType key_typ
 }
 
 double BuildIndex(Catalog* catalog, const std::string& table_name) {
-//  if (table_name != "title" && table_name != "movie_info_idx") return;
+//  if (table_name != "title") return 0.0;
   auto table = catalog->GetTable(table_name);
   ExecutionFactory factory(catalog);
   fmt::print("Build idx for {}\n", table_name);

@@ -146,10 +146,8 @@ const VectorProjection *RowIDIndexJoinExecutor::Next() {
 }
 
 void RowIDIndexJoinExecutor::PrepareKeySide(const VectorProjection* vp) {
-  for (const auto& proj: node_->Projections()) {
-    if (proj.first == 1) {
-      key_side_types_[proj.second] = vp->VectorAt(proj.second)->ElemType();
-    }
+  for (uint64_t i = 0; i < vp->NumCols(); i++) {
+    key_side_types_[i] = vp->VectorAt(i)->ElemType();
   }
 }
 

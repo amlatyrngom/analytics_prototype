@@ -5,3 +5,4 @@ seaborn
 altair
 vega
 notebook
+altair_saver

@@ -179,7 +179,7 @@ double RunBestIndexes(Catalog* catalog, const auto& query_name, std::ostream& os
   if (!query->for_running) return 0.0;
   // Prevent scans from being too cheap compared to idx lookup.
   Settings::Instance()->SetScanDiscount(0.1);
-  Settings::Instance()->SetIdxLookupOverhead(1.01);
+  Settings::Instance()->SetIdxLookupOverhead(2);
   auto physical_plan = Indexes::GenerateBestPlanWithIndexes(catalog, query, &execution_factory, &exec_ctx);
   if (query->count) {
     physical_plan = execution_factory.MakeStaticAggregation(physical_plan, {
@@ -297,13 +297,13 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
 
 
 std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommon() {
-//  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
+  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_workload32/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_full_workload32/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_full_workload64/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("sample_workload/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("synthetic_workload/workload.toml");
-  auto catalog = std::make_unique<Catalog>("motivation_workload/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("motivation_workload/workload.toml");
   auto workload = catalog->Workload();
   WorkloadReader::ReadWorkloadTables(catalog.get(), workload);
 //  if (workload->just_load) {
@@ -313,7 +313,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 
   // Deal with queries.
   std::vector<std::string> query_files{
-//      "job_light_workload/full.toml",
+      "job_light_workload/full.toml",
 //      "job_light_workload/training_queries.toml",
 //      "job_light_workload/testing_queries.toml",
 //      "job_light_workload/join1.toml",
@@ -325,7 +325,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 //      "sample_workload/test_joins2.toml",
 //      "sample_workload/test_joins3.toml",
 //      "synthetic_workload/join1.toml",
-      "motivation_workload/join1.toml",
+//      "motivation_workload/join1.toml",
   };
   auto execution_factory = std::make_unique<ExecutionFactory>(catalog.get());
   QueryReader::ReadWorkloadQueries(catalog.get(), workload, execution_factory.get(), query_files);
@@ -338,7 +338,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 void RunDefaultExpt(Catalog* catalog, bool with_sip) {
   auto result_file = fmt::format("{}/default_results{}.csv", catalog->Workload()->data_folder, with_sip ? "_with_sip" : "");
   std::ofstream result_os(result_file);
-  for (int i = 8; i <= 8; i += 1) {
+  for (int i = 18; i <= 18; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -358,7 +358,7 @@ void RunMatViewExpt(Catalog* catalog, int budget) {
       std::terminate();
     }
   }
-  for (int i = 1; i <= 100; i += 1) {
+  for (int i = 18; i <= 18; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -373,7 +373,7 @@ void RunIndexExpt(Catalog* catalog, int budget) {
   InitIndexes(catalog, budget);
   fmt::print("Available indexes for budget={}: {}\n", budget, catalog->Workload()->available_idxs);
   catalog->Workload()->rebuild = false;
-  for (int i = 1; i <= 100; i += 1) {
+  for (int i = 1; i <= 70; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -386,7 +386,7 @@ void RunSmartIDsExpt(Catalog* catalog) {
   std::ofstream result_os(result_file);
   InitSmartIDs(catalog);
   catalog->Workload()->rebuild = false;
-  for (int i = 1; i <= 100; i += 1) {
+  for (int i = 18; i <= 18; i += 1) {
 //    if (i == 60) continue;
     auto query_name = fmt::format("query{}", i);
     fmt::print("Running query {}\n", query_name);
@@ -404,12 +404,12 @@ int main() {
   auto workload = catalog->Workload();
 
   // Motivation.
-  {
-    InitSmartIDs(catalog.get());
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      SmartIDOptimizer::DoMotivationExpts(catalog.get());
-    }
-  }
+//  {
+//    InitSmartIDs(catalog.get());
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      SmartIDOptimizer::DoMotivationExpts(catalog.get());
+//    }
+//  }
 
   // Synthetic
 //  {
@@ -440,14 +440,14 @@ int main() {
 //  }
 //
   // Indexes
-//  {
-//    InitIndexes(catalog.get(), 4);
-//    for (int budget = 2; budget <= 10; budget += 2) {
-//      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//        RunIndexExpt(catalog.get(), budget);
-//      }
-//    }
-//  }
+  {
+    InitIndexes(catalog.get(), 4);
+    for (int budget = 2; budget <= 10; budget += 2) {
+      if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+        RunIndexExpt(catalog.get(), budget);
+      }
+    }
+  }
 //////
 ////   SmartIDs
 //  {

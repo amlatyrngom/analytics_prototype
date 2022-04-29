@@ -576,6 +576,7 @@ std::tuple<JoinStats, ScanStats, double> RunWithStats(Catalog* catalog, const st
       acc_scan_stats = scan_stats;
     } else {
       for (const auto& [table_name, s]: scan_stats) {
+//        s.ToString(std::cout);
         acc_scan_stats[table_name].scan_time += s.scan_time;
       }
       acc_join_stats[0].build_time += join_stats[0].build_time;
@@ -583,7 +584,6 @@ std::tuple<JoinStats, ScanStats, double> RunWithStats(Catalog* catalog, const st
     }
   }
   for (const auto& [table_name, _]: acc_scan_stats) {
-    acc_scan_stats[table_name].scan_time /= num_runs;
     acc_scan_stats[table_name].scan_time /= num_runs;
   }
   acc_join_stats[0].build_time /= num_runs;
@@ -602,14 +602,14 @@ std::tuple<JoinStats, ScanStats, double> RunWithStats(Catalog* catalog, const st
 
 void SmartIDOptimizer::DoMotivationExpts(Catalog* catalog) {
   std::vector<std::pair<bool, bool>> runs = {
-      {true, false}, {false, false}, {false, true},
+       {true, false}, {false, false}, {false, true},
   };
   auto logical_join = catalog->Workload()->query_infos.at("join1").get()->best_join_order;
   auto left_size = logical_join->left_scan->estimated_output_size;
   auto right_size = logical_join->right_scan->estimated_output_size;
   std::string outfile = fmt::format("{}/motivation_results.csv", catalog->Workload()->data_folder);
   std::ofstream results_os(outfile);
-  for (bool is_good: {true, false}) {
+  for (bool is_good: {false, true}) {
     if (is_good) {
       logical_join->left_scan->estimated_output_size = left_size;
       logical_join->right_scan->estimated_output_size = right_size;
@@ -627,7 +627,7 @@ void SmartIDOptimizer::DoMotivationExpts(Catalog* catalog) {
         expt_name = "Vanilla";
       }
       std::string goodness = is_good ? "Good" : "Bad";
-      auto [join_stats, scan_stats, total_rt] = RunWithStats(catalog, "join1", with_smartids, with_sip);
+      auto [join_stats, scan_stats, total_rt] = RunWithStats(catalog, "join1", with_smartids, with_sip, 100);
       double remaining_time{total_rt};
       for (const auto& [_, s]: scan_stats) {
         results_os << fmt::format("{},{},{} Scan,{}\n", expt_name, goodness, s.table_name, s.scan_time);

@@ -828,6 +828,7 @@ PlanNode *ToPhysical::MakePhysicalPlanWithIndexes(Catalog *catalog,
                                                   const std::unordered_set<std::string> &indexes_to_use,
                                                   ExecutionFactory *factory,
                                                   ExecutionContext *exec_ctx) {
+  fmt::print("Indexes to use: {}\n", indexes_to_use);
   auto workload = catalog->Workload();
   auto logical_right_scan = logical_join->right_scan;
   auto right_table = catalog->GetTable(logical_right_scan->table_info->name);
@@ -860,7 +861,7 @@ PlanNode *ToPhysical::MakePhysicalPlanWithIndexes(Catalog *catalog,
     }
     left_node = factory->MakeScan(left_table, std::move(cols_to_read), std::move(projs), std::move(filters));
   } else {
-    left_node = MakePhysicalJoin(catalog, workload, logical_join->left_join, exec_ctx, factory);
+    left_node = MakePhysicalPlanWithIndexes(catalog, logical_join->left_join, indexes_to_use, factory, exec_ctx);
     left_size = logical_join->left_join->estimated_output_size;
   }
 
