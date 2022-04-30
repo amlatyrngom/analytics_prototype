@@ -91,6 +91,14 @@ struct Settings {
     idx_lookup_overhead_ = overhead;
   }
 
+  void SetUseScalarJoin(bool b) {
+    use_scalar_join_ = b;
+  }
+
+  const auto& UseScalarJoin() const {
+    return use_scalar_join_;
+  }
+
 
  private:
   uint64_t log_vec_size_{10}; // Keep small to prevent too sparse bitmap.
@@ -101,6 +109,7 @@ struct Settings {
   uint64_t node_id_ = 0; // For supporting many nodes.
   double scan_discount_{0.1};
   double idx_lookup_overhead_{2.0};
+  bool use_scalar_join_{true};
   Settings() = default;
 };
 

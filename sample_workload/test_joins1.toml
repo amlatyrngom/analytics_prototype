@@ -23,8 +23,8 @@ projections=["int32_col"]
 # expr = "between"
 # vals = ["0", "1024"]
 
-[queries.query1.scan5]
-type="scan"
-table="dimension_table4"
-inputs=["char_col"]
-projections=["char_col"]
+# [queries.query1.scan5]
+# type="scan"
+# table="dimension_table4"
+# inputs=["char_col"]
+# projections=["char_col"]

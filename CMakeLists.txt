@@ -56,6 +56,8 @@ list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/nodes/
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/rowid_index_join_executor.h)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/rowid_index_join_executor.cpp)
 list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/vector_ops/read_block.cpp)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/include/execution/executors/scalar_hash_join_executor.h)
+list(APPEND EXECUTION_SOURCES ${PROJECT_SOURCE_DIR}/src/execution/executors/scalar_hash_join.cpp)
 
 
 

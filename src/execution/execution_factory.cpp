@@ -10,6 +10,7 @@
 #include "execution/executors/hash_aggr_executor.h"
 #include "execution/executors/sort_executor.h"
 #include "execution/executors/hash_join_executor.h"
+#include "execution/executors/scalar_hash_join_executor.h"
 #include "execution/executors/projection_executor.h"
 #include "execution/executors/rowid_index_join_executor.h"
 #include "common/catalog.h"
@@ -213,7 +214,11 @@ std::unique_ptr<PlanExecutor> ExecutionFactory::MakePlanExecutor(PlanNode *node,
       children.emplace_back(MakePlanExecutor(node->Child(1), ctx));
       auto n = dynamic_cast<HashJoinNode*>(node);
       ASSERT(n != nullptr, "Wrong plan node type!!!");
-      return std::make_unique<HashJoinExecutor>(n, std::move(children));
+      if (Settings::Instance()->UseScalarJoin()) {
+        return std::make_unique<ScalarHashJoinExecutor>(n, std::move(children));
+      } else {
+        return std::make_unique<HashJoinExecutor>(n, std::move(children));
+      }
     }
 //    case PlanType::Materialize: {
 //      children.emplace_back(MakePlanExecutor(node->Child(0), ctx));

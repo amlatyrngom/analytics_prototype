@@ -9,8 +9,16 @@ inputs=["id", "production_year"]
 projections=["id"]
 [[queries.join1.title_scan.filters]]
 col="production_year"
-expr = "lt"
-val="2000"
+expr = "between"
+left_closed=true
+right_closed=true
+vals=["1980", "2005"]
+# [[queries.join1.title_scan.filters]]
+# col="production_year"
+# expr = "eq"
+# left_closed=true
+# right_closed=true
+# val="1980"
 
 
 [queries.join1.cast_info_scan]

@@ -14,5 +14,8 @@ namespace smartid {
 
 using JoinTable = tsl::robin_map<uint64_t, HTEntry *, ExecHasher>;
 
+using JoinTable64 = tsl::robin_map<int64_t, std::vector<HTEntry *>>;
+using JoinTable32 = tsl::robin_map<int32_t, std::vector<HTEntry *>>;
+
 using AggrTable = tsl::robin_map<uint64_t, HTEntry *, ExecHasher>;
 }

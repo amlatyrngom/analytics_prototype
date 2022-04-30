@@ -14,6 +14,7 @@
 #include "execution/execution_context.h"
 #include "execution/executors/scan_executor.h"
 #include "execution/executors/hash_join_executor.h"
+#include "execution/executors/scalar_hash_join_executor.h"
 #include "execution/executors/static_aggr_executor.h"
 #include "execution/executors/plan_executor.h"
 #include <toml++/toml.h>
@@ -530,6 +531,19 @@ void MakeStats(ScanStats& scan_stats, JoinStats& join_stats, PlanExecutor* execu
     join_stats.emplace_back(s);
     return;
   }
+  auto s_join_exec = dynamic_cast<ScalarHashJoinExecutor*>(executor);
+  if (s_join_exec != nullptr) {
+    MakeStats(scan_stats, join_stats, executor->Child(0));
+    MakeStats(scan_stats, join_stats, executor->Child(1));
+    JoinStat s{};
+    s.probe_in = s_join_exec->probe_in;
+    s.join_out = s_join_exec->join_out;
+    s.probe_time = s_join_exec->probe_time / double(1e9);
+    s.build_time = s_join_exec->build_time / double(1e9);
+    join_stats.emplace_back(s);
+    return;
+  }
+
   MakeStats(scan_stats, join_stats, executor->Child(0));
 }
 
