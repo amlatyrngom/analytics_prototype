@@ -297,13 +297,13 @@ double RunBestSmartID(Catalog* catalog, const auto& query_name, std::ostream& os
 
 
 std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommon() {
-//  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
+  auto catalog = std::make_unique<Catalog>("job_light_workload/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_workload32/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_full_workload32/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("job_light_full_workload64/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("sample_workload/workload.toml");
 //  auto catalog = std::make_unique<Catalog>("synthetic_workload/workload.toml");
-  auto catalog = std::make_unique<Catalog>("motivation_workload/workload.toml");
+//  auto catalog = std::make_unique<Catalog>("motivation_workload/workload.toml");
   auto workload = catalog->Workload();
   WorkloadReader::ReadWorkloadTables(catalog.get(), workload);
 //  if (workload->just_load) {
@@ -313,7 +313,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 
   // Deal with queries.
   std::vector<std::string> query_files{
-//      "job_light_workload/full.toml",
+      "job_light_workload/full.toml",
 //      "job_light_workload/training_queries.toml",
 //      "job_light_workload/testing_queries.toml",
 //      "job_light_workload/join1.toml",
@@ -325,7 +325,7 @@ std::pair<std::unique_ptr<Catalog>, std::unique_ptr<ExecutionFactory>> InitCommo
 //      "sample_workload/test_joins2.toml",
 //      "sample_workload/test_joins3.toml",
 //      "synthetic_workload/join1.toml",
-      "motivation_workload/join1.toml",
+//      "motivation_workload/join1.toml",
   };
   auto execution_factory = std::make_unique<ExecutionFactory>(catalog.get());
   QueryReader::ReadWorkloadQueries(catalog.get(), workload, execution_factory.get(), query_files);
@@ -404,13 +404,13 @@ int main() {
   auto workload = catalog->Workload();
 
   // Motivation.
-  {
-    InitSmartIDs(catalog.get());
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-      Settings::Instance()->SetUseScalarJoin(true);
-      SmartIDOptimizer::DoMotivationExpts(catalog.get());
-    }
-  }
+//  {
+//    InitSmartIDs(catalog.get());
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
+//      Settings::Instance()->SetUseScalarJoin(true);
+//      SmartIDOptimizer::DoMotivationExpts(catalog.get());
+//    }
+//  }
 
   // Synthetic
 //  {
@@ -421,17 +421,13 @@ int main() {
 //  }
 
   // Default.
-  {
-    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
-//      Settings::Instance()->SetUseScalarJoin(false);
-//      RunDefaultExpt(catalog.get(), false);
-//      RunDefaultExpt(catalog.get(), true);
+//  {
+//    if (!(workload->reload || workload->rebuild || workload->gen_costs)) {
 //      Settings::Instance()->SetUseScalarJoin(true);
 //      RunDefaultExpt(catalog.get(), false);
 //      RunDefaultExpt(catalog.get(), true);
-
-    }
-  }
+//    }
+//  }
 
 //   Mat views.
 //  {

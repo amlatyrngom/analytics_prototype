@@ -207,6 +207,7 @@ const VectorProjection *ScalarHashJoinExecutor::Next() {
         return bloom_->Test(key);
       });
     }
+    probe_in += cand_filter_.NumOnes();
     cand_filter_.Map([&](sel_t i) {
       auto key = key_data[i] & Settings::KEY_MASK32;
       if (const auto& it = join_table32_.find(key); it != join_table32_.end()) {
@@ -225,6 +226,7 @@ const VectorProjection *ScalarHashJoinExecutor::Next() {
         return bloom_->Test(key);
       });
     }
+    probe_in += cand_filter_.NumOnes();
     cand_filter_.Map([&](sel_t i) {
       auto key = key_data[i] & Settings::KEY_MASK64;
       if (const auto& it = join_table64_.find(key); it != join_table64_.end()) {
